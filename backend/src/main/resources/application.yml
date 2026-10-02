@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: dars-backend
+  datasource:
+    # Dev default: H2 file DB in PostgreSQL mode. Use the "prod" profile for PostgreSQL.
+    url: jdbc:h2:file:./data/dars;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 5MB
+
+dars:
+  jwt:
+    secret: ${DARS_JWT_SECRET:dev-only-secret-change-me-it-must-be-32-bytes-or-more}
+    access-ttl: 15m
+    refresh-ttl: 7d
+  storage-dir: ${DARS_STORAGE_DIR:./uploads}
+  cors-origins: ${DARS_CORS_ORIGINS:http://localhost:5173,http://localhost:8081}
+  public-base-url: ${DARS_PUBLIC_BASE_URL:http://localhost:8080}
+  admin:
+    username: ${DARS_ADMIN_USERNAME:admin}
+    password: ${DARS_ADMIN_PASSWORD:Admin@12345}
+    full-name: System Administrator
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui

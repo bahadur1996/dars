@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: ${DARS_DB_URL:jdbc:postgresql://localhost:5432/dars}
+    username: ${DARS_DB_USERNAME:dars}
+    password: ${DARS_DB_PASSWORD:dars}
+
+dars:
+  jwt:
+    secret: ${DARS_JWT_SECRET}
+  admin:
+    password: ${DARS_ADMIN_PASSWORD}

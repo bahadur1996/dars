@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "DARS Field",
+    "slug": "dars-field",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "bd.dhaka.dars.field"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0E6B4E",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "bd.dhaka.dars.field"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "DARS uses the camera to photograph rickshaws and drivers and to scan registration QR codes.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "DARS lets you choose an existing photo of a rickshaw, driver or NID card.",
+          "cameraPermission": "DARS uses the camera to photograph rickshaws and drivers."
+        }
+      ]
+    ],
+    "scheme": "dars",
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiUrl": "http://localhost:8080/api/v1"
+    }
+  }
+}
