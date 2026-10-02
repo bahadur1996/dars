@@ -1,8 +1,8 @@
 package bd.dhaka.dars.config;
 
-import bd.dhaka.dars.user.AppUser;
-import bd.dhaka.dars.user.Role;
-import bd.dhaka.dars.user.UserRepository;
+import bd.dhaka.dars.entity.AppUser;
+import bd.dhaka.dars.entity.Role;
+import bd.dhaka.dars.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;

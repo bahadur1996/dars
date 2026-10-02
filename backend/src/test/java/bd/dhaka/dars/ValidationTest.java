@@ -2,10 +2,10 @@ package bd.dhaka.dars;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import bd.dhaka.dars.common.Address;
-import bd.dhaka.dars.driver.DriverDtos.DriverRequest;
-import bd.dhaka.dars.driver.Gender;
-import bd.dhaka.dars.rickshaw.RickshawDtos.RickshawRequest;
+import bd.dhaka.dars.dto.DriverDtos.DriverRequest;
+import bd.dhaka.dars.dto.RickshawDtos.RickshawRequest;
+import bd.dhaka.dars.entity.Address;
+import bd.dhaka.dars.entity.Gender;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
