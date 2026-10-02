@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-// Keep in sync with backend bd.dhaka.dars.common.Patterns.
+// Keep in sync with backend bd.dhaka.dars.validation.Patterns.
 export const PATTERNS = {
   nid: /^(\d{10}|\d{17})$/,
   mobile: /^01[3-9]\d{8}$/,

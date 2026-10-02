@@ -58,7 +58,7 @@ and map entities to DTOs inside that transaction, because response mapping touch
 validated references through `get(id)` / `PhotoService.require(id, field)` rather than repositories directly.
 
 **Errors.** Throw `ApiException` (factories `notFound`, `conflict`, `badRequest`, `forbidden`) with a stable
-UPPER_SNAKE `code`. `GlobalExceptionHandler` turns everything into the `ApiError { code, message, fields }`
+UPPER_SNAKE `code`. `GlobalExceptionHandler` turns everything into the `ApiError { code, message, fieldErrors }`
 JSON shape that the web and mobile apps parse. Bean validation errors become `VALIDATION_FAILED` with
 per-field messages. A `DataIntegrityViolationException` becomes 409 `DUPLICATE`, but services check
 uniqueness first so they can return specific codes (`DUPLICATE_NID`, `DUPLICATE_NUMBER`).
