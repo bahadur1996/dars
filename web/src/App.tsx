@@ -17,6 +17,7 @@ import { LoginPage } from './pages/LoginPage'
 import { OwnersPage } from './pages/OwnersPage'
 import { PublicComplaintPage, PublicComplaintStatusPage } from './pages/PublicComplaintPages'
 import { RickshawDetailPage } from './pages/RickshawDetailPage'
+import { RickshawScanPage } from './pages/RickshawScanPage'
 import { RickshawsPage } from './pages/RickshawsPage'
 import { RickshawWizardPage } from './pages/RickshawWizardPage'
 import { UsersPage } from './pages/UsersPage'
@@ -47,6 +48,8 @@ export default function App() {
       {/* Public: no login (FR-14). */}
       <Route path="/complain" element={<PublicComplaintPage />} />
       <Route path="/complain/status" element={<PublicComplaintStatusPage />} />
+      {/* Vehicle QR target (FR-17): officers go to the detail page, others see the public verify view. */}
+      <Route path="/r/:number" element={<RickshawScanPage />} />
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
         <Route index element={<DashboardPage />} />
         <Route path="rickshaws" element={<RickshawsPage />} />

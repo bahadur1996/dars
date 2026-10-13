@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Office web app for DARS (Dhaka Auto-Rickshaw Registration System). Officers and admins use it to register and
 search rickshaws, drivers and owners, print registration cards, transfer rickshaw ownership, handle complaints and
-cases, manage officer accounts and read the audit log. It also serves two public pages (no login) where members of
-the public file a complaint and check its status.
+cases, manage officer accounts and read the audit log. It also serves public pages (no login) where members of
+the public file a complaint and check its status, and the landing page that vehicle QR codes open.
 It is a client of the Spring Boot API in `../backend` (see `../backend/CLAUDE.md` for the server-side rules).
 Requirements are in `../docs/PRD.md` (v1.2 changes in its section 7).
 
@@ -38,8 +38,13 @@ Dev login: `admin / Admin@12345` (the backend seeds it on first boot).
 
 **Entry and routing.** `main.tsx` nests the providers: MUI `ThemeProvider` → `QueryClientProvider` → `BrowserRouter` →
 `AuthProvider` → `App`. All routes live in `App.tsx`:
-- `/login`, `/complain` and `/complain/status` are public. The two complaint pages (`PublicComplaintPages.tsx`)
-  use their own `PublicShell` rather than `Layout`, and must work without a session.
+- `/login`, `/complain`, `/complain/status` and `/r/:number` are public. They use `PublicShell` (exported from
+  `PublicComplaintPages.tsx`) rather than `Layout`, and must work without a session. `/complain?rickshaw=` pre-fills
+  the rickshaw number.
+- `/r/:number` (`RickshawScanPage`) is what the vehicle QR code encodes (FR-17). It waits for `restoring`, then a
+  signed-in user is redirected (`replace`) to `/rickshaws/:id` via `rickshawApi.byNumber`. Anyone else gets the
+  public verify view, whose "Officer sign in" passes `state.from` so `LoginPage` returns to `/r/:number` (and so
+  on to the detail page). Don't change the path: it is printed on cards.
 - Everything else sits inside `RequireAuth` + `Layout` (the app shell with nav and the outlet).
 - `RequireAdmin` guards `/users` and `/audit`.
 - Create and edit share a page (`drivers/new` and `drivers/:id/edit` → `DriverFormPage`; `rickshaws/new` and
@@ -57,7 +62,7 @@ Dev login: `admin / Admin@12345` (the backend seeds it on first boot).
     (with a `NETWORK` code when the server can't be reached).
 - `endpoints.ts`: one object per resource (`authApi`, `driverApi`, `rickshawApi`, `ownerApi`, `photoApi`,
   `complaintApi`, `caseApi`, `userApi`, `auditApi`, `dashboardApi`, and `publicApi` for the unauthenticated
-  complaint endpoints), each returning `r.data`. Query params pass through `clean()`, which
+  complaint and verify endpoints), each returning `r.data`. Query params pass through `clean()`, which
   drops empty values. Add new endpoints here rather than calling `api` from components.
 - `types.ts`: hand-written TypeScript types for the backend's response DTOs. There is no codegen, so update them
   when the backend's `dto/` records change.
@@ -95,7 +100,10 @@ Dev login: `admin / Admin@12345` (the backend seeds it on first boot).
 
 **Photos.**
 - The backend serves photos only to logged-in users, so never use `<img src="/api/...">`. Render them with
-  `<AuthImage id=…>`, which fetches a blob through `photoApi` and manages the object URL.
+  `<AuthImage id=…>`, which fetches a blob through `photoApi` and manages the object URL. The one exception is
+  `publicApi.verifyPhotoUrl` (the unauthenticated verify photo on the scan page).
+- The rickshaw QR image (`rickshawApi.qrPng`, query key `['rickshaw', id, 'qr']`) is fetched as a blob the same way
+  and shown with a download link in the `QrSection` of `RickshawDetailPage`.
 - Uploads go through `<PhotoInput>`: webcam or file → `lib/resizeImage` (longest edge ≤ 1600 px, re-encoded as JPEG
   at quality 0.82) → `photoApi.upload` → the returned UUID becomes the form value (`photoId`, `nidFrontId`, …).
   Records refer to photos by these IDs.

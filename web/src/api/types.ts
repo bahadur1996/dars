@@ -166,6 +166,13 @@ export interface PublicComplaint {
   resolutionNote: string | null
 }
 
+/** What the public verify endpoint returns for a scanned QR code: no personal data. */
+export interface PublicVerify {
+  rickshawNumber: string
+  status: RickshawStatus
+  registeredAt: string
+}
+
 export interface CaseFile {
   id: number
   caseNo: string

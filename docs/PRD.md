@@ -25,7 +25,7 @@ On approval, step 1 is saving this PRD as `docs/PRD.md` in the repo.
 |---|---|
 | ADMIN | Everything; create/disable officers; edit/suspend any record; view audit log |
 | OFFICER | Register drivers, owners and rickshaws; edit own records within 24h; transfer rickshaw ownership; review complaints and file cases; search/view all |
-| (Public) | Nothing else. All endpoints require login except `/auth/login`, a QR verify endpoint that returns only number, status and photo thumbnail, and (v1.2) the public complaint form and complaint status lookup |
+| (Public) | Nothing else. All endpoints require login except `/auth/login`, a QR verify endpoint that returns only number, status and photo thumbnail, and (v1.2) the public complaint form and complaint status lookup. A member of the public who scans a vehicle QR code sees only that verify view (FR-17) |
 
 ### 1.2 Functional requirements
 - **FR-1 Auth**: username/password login, JWT access token (15 min) + refresh token (7 days), logout, change password. Lockout after 5 failed attempts for 15 min.
@@ -39,7 +39,7 @@ On approval, step 1 is saving this PRD as `docs/PRD.md` in the repo.
 - **FR-6 Driver assignment**: **Removed in v1.2.** Drivers and rickshaws are independent records. Past assignment rows are kept in the database for reference only and are not shown or edited.
 - **FR-7 Search & list**: paginated. Rickshaws filter by number, thana, status, registration date range and current owner NID/mobile. Drivers filter by driver code, NID, mobile, status and date range.
 - **FR-8 Detail views**: rickshaw + current owner + photos + ownership history + complaints and cases against it; driver + complaints and cases against them.
-- **FR-9 Registration card**: printable PDF/HTML card with photo, number, thana and a QR code linking to the verify endpoint (no driver code from v1.2).
+- **FR-9 Registration card**: printable PDF/HTML card with photo, number, thana and the vehicle QR code (FR-17; no driver code from v1.2).
 - **FR-10 Audit log**: who did what and when (create/update/status change/login; from v1.2 also ownership transfers, complaints and cases), viewable by Admin.
 - **FR-11 Dashboard**: totals, registrations per day/thana, top officers; from v1.2 also open complaints and open cases.
 - **FR-12 Mobile field capture**: register with the camera and look up by number or QR scan. Offline drafts are queued and synced when online (phase 3b).
@@ -59,6 +59,11 @@ On approval, step 1 is saving this PRD as `docs/PRD.md` in the repo.
   - System: `caseNo` (`CASE-YYYY-NNNNNN`), status (OPEN → UNDER_INVESTIGATION → CLOSED / DISMISSED), resolution note, filedBy/At, closedAt.
   - Status changes need a note. Reopening a CLOSED/DISMISSED case is ADMIN-only. Filing a case does not change the rickshaw's or driver's status; that stays a separate admin action.
 - **FR-16 Complaint & case lists**: paginated, filterable by status, rickshaw number, driver code, thana, date range; complaints also by complainant phone/NID.
+- **FR-17 Vehicle QR code** (v1.2): every rickshaw has a QR code, generated on demand from its number (nothing is stored). It encodes the web app URL `<public base URL>/r/<rickshawNumber>`.
+  - An officer or admin who scans it with any phone camera and is signed in is **redirected to the rickshaw's detail page**. Not signed in: the page shows the public verify view (number, status, registration date, vehicle photo) with "Officer sign in", which returns to the detail page after login, and "Report a problem", which opens the complaint form with the rickshaw number filled in.
+  - Unknown number: "not registered, the card may be fake".
+  - The QR code is printed on the registration card (FR-9) and shown on the rickshaw detail page with a PNG download (for stickers).
+  - Cards printed before v1.2 encode the old `/api/v1/public/verify/<number>` URL and keep working as the plain public verify response; reprint them to get the redirect.
 
 ### 1.3 Non-functional requirements
 - Photos are compressed client-side to ≤ 1600 px / ~500 KB; the server rejects files over 2 MB or with a bad content type (magic-byte check).
@@ -106,13 +111,15 @@ React web and React Native mobile → REST/JSON + JWT → Spring Boot → Postgr
   - v1.2: `GET|POST /cases`, `GET /cases/{id}`, `PATCH /cases/{id}/status`
   - v1.2: `GET /rickshaws/{id}/complaints`, `GET /rickshaws/{id}/cases`, `GET /drivers/{id}/complaints`, `GET /drivers/{id}/cases`
   - `GET /rickshaws/{id}/card.pdf`, `GET /public/verify/{number}`
+  - v1.2: `GET /rickshaws/{id}/qr.png` (auth; the vehicle QR code, FR-17)
   - `GET /audit` (ADMIN), `GET /dashboard/summary`
 - **Errors**: a uniform `{code, message, fieldErrors[]}` body; 409 on duplicate NID/number.
 
 ### 2.2 Web (`web/`)
 - Vite + React 18 + TS, React Router, TanStack Query, Axios (JWT interceptor with refresh), React Hook Form + Zod, MUI, react-i18next (en/bn), Recharts (dashboard).
 - **Pages**: Login, Dashboard, Drivers (list/new/detail/edit), Owners, Rickshaws (list/new wizard: owner → vehicle+photo → review, detail with card print and "Change owner"), Complaints (list/detail), Cases (list/new/detail), Users (admin), Audit (admin). *(v1.2: the wizard's driver step and the detail page's reassign/assignment history are removed.)*
-- **Public pages (v1.2, no login)**: `/complain` (complaint form → shows the complaint number) and `/complain/status` (number + phone → status). Linked from the login page.
+- **Public pages (v1.2, no login)**: `/complain` (complaint form → shows the complaint number; `?rickshaw=` pre-fills the number) and `/complain/status` (number + phone → status). Linked from the login page.
+- **QR scan page (v1.2, FR-17)**: `/r/:number`. Signed in → redirect to `/rickshaws/:id`; otherwise the public verify view with sign-in (returns here) and "Report a problem".
 - Photo input: file upload or webcam capture, with client-side resize before upload.
 - Route guards by role.
 
@@ -171,7 +178,7 @@ Differences from the plan above, and why:
 
 ---
 
-## 7. v1.2 change request (from `docs/feedback.md`, 2026-10-13)
+## 7. v1.2 change request (from `docs/feedback_11_10_2026.md`, 2026-10-13)
 
 | # | Feedback | Change |
 |---|---|---|
@@ -179,6 +186,7 @@ Differences from the plan above, and why:
 | 2 | Driver–rickshaw association isn't practical | FR-6 removed; FR-5/7/8/9 no longer mention a driver |
 | 3 | A case can be filed against a rickshaw and a driver | New FR-15 cases |
 | 4 | Complaints need rickshaw number, driver number, complainant name, phone, NID | New FR-14 complaints, FR-16 lists |
+| 5 | A QR code per vehicle; an officer who scans it is redirected to the rickshaw details page | New FR-17 vehicle QR code; FR-9 card QR now encodes the web scan URL |
 
 ### 7.1 Data model (Flyway `V2__ownership_complaints_cases.sql`; `V1` is not edited)
 - `ownership(id, rickshaw_id, owner_id, from_date, to_date null, changed_by, note)`. Backfilled with one open row per existing rickshaw from `rickshaw.owner_id`/`registered_at`/`registered_by`. `rickshaw.owner_id` stays as the current owner (denormalized for search and display); `RickshawService` keeps both in step. "One open row per rickshaw" is enforced in the service (no partial indexes, H2 portability).
@@ -193,8 +201,9 @@ Differences from the plan above, and why:
 - Rickshaw search `q` matches the number (contains) or the current owner's NID/mobile (exact).
 - New endpoints as listed in §2.1. New error codes: `SAME_OWNER`, `RICKSHAW_NOT_FOUND`, `DRIVER_NOT_FOUND`, `CASE_TARGET_REQUIRED`, `COMPLAINT_NOT_OPEN`, `INVALID_STATUS_TRANSITION`.
 - `GET /public/verify/{number}` is unchanged and never exposes complaints or cases.
+- FR-17: new `GET /rickshaws/{id}/qr.png`. The card's QR code now encodes `dars.public-base-url + /r/{number}`, so `dars.public-base-url` (`DARS_PUBLIC_BASE_URL`) is now the **web app's** public URL (dev default `http://localhost:5173`, was the backend's `:8080`). No schema change.
 
 ### 7.3 Scope of this change
 - Order: PRD → approval → backend → backend `CLAUDE.md` → web → web `CLAUDE.md`.
-- **Mobile is not in this round.** Its "Register Rickshaw" flow still sends `driverId` and shows the current driver, so it needs a follow-up update to keep working against the v1.2 backend.
+- **Mobile is not in this round.** Its "Register Rickshaw" flow still sends `driverId` and shows the current driver, so it needs a follow-up update to keep working against the v1.2 backend. Its QR scanner (`mobile/src/lib/qr.ts`) only extracts the number from `/public/verify/<number>` URLs, so it must also accept the new `/r/<number>` URL.
 - Complaints are filed by the public through the unauthenticated complaint form (FR-14). The rest of the citizen portal stays out of scope.

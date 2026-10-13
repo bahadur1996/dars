@@ -1,4 +1,4 @@
-import { api } from './client'
+import { api, API_BASE } from './client'
 import type {
   AuditEntry,
   CaseFile,
@@ -13,6 +13,7 @@ import type {
   Ownership,
   Page,
   PublicComplaint,
+  PublicVerify,
   Rickshaw,
   RickshawStatus,
   Role,
@@ -68,6 +69,7 @@ export const ownerApi = {
 export const rickshawApi = {
   search: (p: Params) => api.get<Page<Rickshaw>>('/rickshaws', { params: clean(p) }).then((r) => r.data),
   get: (id: number) => api.get<Rickshaw>(`/rickshaws/${id}`).then((r) => r.data),
+  byNumber: (n: string) => api.get<Rickshaw>(`/rickshaws/by-number/${encodeURIComponent(n)}`).then((r) => r.data),
   create: (r: RickshawInput) => api.post<Rickshaw>('/rickshaws', r).then((res) => res.data),
   update: (id: number, r: RickshawInput) => api.put<Rickshaw>(`/rickshaws/${id}`, r).then((res) => res.data),
   setStatus: (id: number, status: RickshawStatus, reason?: string) =>
@@ -78,6 +80,7 @@ export const rickshawApi = {
   complaints: (id: number) => api.get<Complaint[]>(`/rickshaws/${id}/complaints`).then((r) => r.data),
   cases: (id: number) => api.get<CaseFile[]>(`/rickshaws/${id}/cases`).then((r) => r.data),
   cardPdf: (id: number) => api.get<Blob>(`/rickshaws/${id}/card.pdf`, { responseType: 'blob' }).then((r) => r.data),
+  qrPng: (id: number) => api.get<Blob>(`/rickshaws/${id}/qr.png`, { responseType: 'blob' }).then((r) => r.data),
 }
 
 export const complaintApi = {
@@ -95,8 +98,11 @@ export const caseApi = {
     api.patch<CaseFile>(`/cases/${id}/status`, { status, note }).then((r) => r.data),
 }
 
-/** Unauthenticated endpoints used by the public complaint pages. */
+/** Unauthenticated endpoints used by the public complaint and QR scan pages. */
 export const publicApi = {
+  verify: (number: string) => api.get<PublicVerify>(`/public/verify/${encodeURIComponent(number)}`).then((r) => r.data),
+  /** Plain URL (no token needed), usable directly as an <img> src. */
+  verifyPhotoUrl: (number: string) => `${API_BASE}/public/verify/${encodeURIComponent(number)}/photo`,
   fileComplaint: (c: PublicComplaintInput) =>
     api.post<PublicComplaint>('/public/complaints', c).then((r) => r.data),
   complaintStatus: (complaintNo: string, phone: string) =>

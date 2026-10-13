@@ -139,6 +139,18 @@ public class RickshawController {
                 .body(pdf);
     }
 
+    /** FR-17: the vehicle's QR code, for display on the detail page or printing as a sticker. */
+    @GetMapping(value = "/{id}/qr.png", produces = MediaType.IMAGE_PNG_VALUE)
+    @Transactional(readOnly = true)
+    public ResponseEntity<byte[]> qr(@PathVariable Long id) {
+        Rickshaw r = service.get(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                        .filename("qr-" + r.getRickshawNumber() + ".png").build().toString())
+                .body(cards.qrPng(r, 400));
+    }
+
     private RickshawResponse toResponse(Rickshaw r) {
         return RickshawResponse.from(r);
     }

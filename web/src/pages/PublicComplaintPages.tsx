@@ -27,7 +27,7 @@ const STATUS_TEXT: Record<PublicComplaint['status'], string> = {
 }
 
 /** Shell for the pages members of the public can open without an account. */
-function PublicShell({ children }: { children: ReactNode }) {
+export function PublicShell({ children }: { children: ReactNode }) {
   const { i18n } = useTranslation()
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.paper }}>
@@ -49,10 +49,17 @@ function PublicShell({ children }: { children: ReactNode }) {
   )
 }
 
-/** Public complaint form (FR-14). No login; the backend rate-limits submissions per IP. */
+/**
+ * Public complaint form (FR-14). No login; the backend rate-limits submissions per IP.
+ * `?rickshaw=` pre-fills the rickshaw number (linked from the QR scan page).
+ */
 export function PublicComplaintPage() {
   const { t } = useTranslation()
-  const form = useForm<PublicComplaintForm, unknown, PublicComplaintInput>({ resolver: zodResolver(publicComplaintSchema), defaultValues: EMPTY })
+  const [search] = useSearchParams()
+  const form = useForm<PublicComplaintForm, unknown, PublicComplaintInput>({
+    resolver: zodResolver(publicComplaintSchema),
+    defaultValues: { ...EMPTY, rickshawNumber: search.get('rickshaw') ?? '' },
+  })
   const [error, setError] = useState<string | null>(null)
   const [filed, setFiled] = useState<PublicComplaint | null>(null)
 

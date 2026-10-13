@@ -116,16 +116,19 @@ New mutating service methods should audit the same way (`action`, `entity`, `id`
 - Photos are uploaded first through `PhotoController` (JPEG/PNG detected from magic bytes, max 2 MB), then
   referenced by UUID in driver/rickshaw/case requests. Bytes go through the `StorageService` interface
   (`LocalStorageService` writes to `dars.storage-dir` under `yyyy/MM/` keys).
-- `PublicVerifyController` is unauthenticated on purpose (QR code target). It may expose only the rickshaw
-  number, status, registration date and vehicle photo, never driver or owner personal data.
-- `CardService` renders the printable PDF registration card. Its QR code encodes
-  `dars.public-base-url + /api/v1/public/verify/{number}`.
+- `PublicVerifyController` is unauthenticated on purpose (the web scan page uses it for visitors who are not signed
+  in, and pre-v1.2 cards point straight at it). It may expose only the rickshaw number, status, registration date
+  and vehicle photo, never driver or owner personal data.
+- `CardService` renders the printable PDF registration card and the vehicle QR code (FR-17, `qrPng`, also served by
+  `GET /rickshaws/{id}/qr.png`). The QR code encodes `dars.public-base-url + /r/{number}`: a **web app** route that
+  sends a signed-in officer to the rickshaw's detail page. QR codes are generated on demand and never stored.
 
 ## Configuration
 
 All app settings bind to `config/DarsProperties` (`dars.*` in `application.yml`). Each one can be overridden
 by an env var: `DARS_JWT_SECRET` (at least 32 bytes, checked at startup), `DARS_STORAGE_DIR`, `DARS_CORS_ORIGINS`
-(comma-separated; dev default allows the Vite and Expo ports), `DARS_PUBLIC_BASE_URL`, `DARS_ADMIN_USERNAME`,
+(comma-separated; dev default allows the Vite and Expo ports), `DARS_PUBLIC_BASE_URL` (the web app's public URL
+that QR codes point to; dev default `http://localhost:5173`), `DARS_ADMIN_USERNAME`,
 `DARS_ADMIN_PASSWORD`, and `DARS_PUBLIC_COMPLAINTS_PER_HOUR` / `DARS_PUBLIC_LOOKUPS_PER_HOUR` (defaults 5 / 30). `application-prod.yml` switches the datasource to `DARS_DB_URL`, `DARS_DB_USERNAME`
 and `DARS_DB_PASSWORD`, and has no defaults for the secrets.
 

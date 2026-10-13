@@ -11,7 +11,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.MultiFormatReader;
+import com.google.zxing.NotFoundException;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 import com.jayway.jsonpath.JsonPath;
+import java.io.ByteArrayInputStream;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -263,6 +269,12 @@ class ApiFlowIntegrationTest {
         MvcResult pdf = mvc.perform(auth(get("/api/v1/rickshaws/{id}/card.pdf", rickshawId), officer))
                 .andExpect(status().isOk()).andReturn();
         assertThat(new String(pdf.getResponse().getContentAsByteArray(), 0, 4)).isEqualTo("%PDF");
+        // FR-17: the vehicle QR code opens the web scan page for this number; officers only
+        MvcResult qr = mvc.perform(auth(get("/api/v1/rickshaws/{id}/qr.png", rickshawId), officer))
+                .andExpect(status().isOk()).andReturn();
+        assertThat(qr.getResponse().getContentType()).isEqualTo(MediaType.IMAGE_PNG_VALUE);
+        assertThat(decodeQr(qr.getResponse().getContentAsByteArray())).endsWith("/r/" + number);
+        mvc.perform(get("/api/v1/rickshaws/{id}/qr.png", rickshawId)).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/public/verify/{n}", number))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
@@ -543,5 +555,11 @@ class ApiFlowIntegrationTest {
                 .andExpect(jsonPath("$.accessToken").isNotEmpty());
         mvc.perform(post("/api/v1/auth/refresh").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isUnauthorized());
+    }
+
+    private static String decodeQr(byte[] png) throws IOException, NotFoundException {
+        BufferedImage img = ImageIO.read(new ByteArrayInputStream(png));
+        return new MultiFormatReader().decode(new BinaryBitmap(new HybridBinarizer(
+                new BufferedImageLuminanceSource(img)))).getText();
     }
 }

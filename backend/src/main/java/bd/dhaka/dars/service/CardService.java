@@ -26,7 +26,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-/** Renders the printable registration card (FR-9) with a QR code pointing to the public verify endpoint. */
+/**
+ * Renders the printable registration card (FR-9) and the vehicle QR code (FR-17). The QR code encodes the web
+ * app's scan page, which opens the rickshaw's detail page for a signed-in officer.
+ */
 @Service
 public class CardService {
 
@@ -43,8 +46,20 @@ public class CardService {
         this.props = props;
     }
 
-    public String verifyUrl(Rickshaw r) {
-        return props.publicBaseUrl() + "/api/v1/public/verify/" + r.getRickshawNumber();
+    public String qrUrl(Rickshaw r) {
+        return props.publicBaseUrl() + "/r/" + r.getRickshawNumber();
+    }
+
+    /** The vehicle's QR code as a square PNG of {@code size} pixels. */
+    public byte[] qrPng(Rickshaw r, int size) {
+        try {
+            BitMatrix matrix = new QRCodeWriter().encode(qrUrl(r), BarcodeFormat.QR_CODE, size, size);
+            ByteArrayOutputStream png = new ByteArrayOutputStream();
+            MatrixToImageWriter.writeToStream(matrix, "PNG", png);
+            return png.toByteArray();
+        } catch (WriterException | IOException e) {
+            throw new IllegalStateException("QR generation failed", e);
+        }
     }
 
     public byte[] render(Rickshaw r) {
@@ -81,7 +96,7 @@ public class CardService {
         infoCell.setBorder(Rectangle.NO_BORDER);
         table.addCell(infoCell);
 
-        table.addCell(qrCell(verifyUrl(r)));
+        table.addCell(qrCell(qrPng(r, 200)));
 
         doc.add(table);
         doc.close();
@@ -110,19 +125,16 @@ public class CardService {
         return cell;
     }
 
-    private static PdfPCell qrCell(String text) {
+    private static PdfPCell qrCell(byte[] png) {
         try {
-            BitMatrix matrix = new QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, 200, 200);
-            ByteArrayOutputStream png = new ByteArrayOutputStream();
-            MatrixToImageWriter.writeToStream(matrix, "PNG", png);
-            Image img = Image.getInstance(png.toByteArray());
+            Image img = Image.getInstance(png);
             img.scaleToFit(80, 80);
             PdfPCell cell = new PdfPCell(img, false);
             cell.setBorder(Rectangle.NO_BORDER);
             cell.setHorizontalAlignment(Element.ALIGN_CENTER);
             return cell;
-        } catch (WriterException | IOException e) {
-            throw new IllegalStateException("QR generation failed", e);
+        } catch (IOException e) {
+            throw new IllegalStateException("QR image failed", e);
         }
     }
 

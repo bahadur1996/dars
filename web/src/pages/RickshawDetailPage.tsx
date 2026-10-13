@@ -1,7 +1,8 @@
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from '@mui/material'
+import DownloadOutlined from '@mui/icons-material/DownloadOutlined'
 import PrintOutlined from '@mui/icons-material/PrintOutlined'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link as RouterLink, useLocation, useParams } from 'react-router-dom'
 import { apiError } from '../api/client'
@@ -129,6 +130,7 @@ export function RickshawDetailPage() {
               <Field label="Address">{`${r.owner.address.line}, ${r.owner.address.thana}`}</Field>
             </Box>
           </Section>
+          <QrSection rickshawId={id} number={r.rickshawNumber} />
           <Section title="Ownership history">
             <Table size="small">
               <TableHead>
@@ -170,6 +172,40 @@ export function RickshawDetailPage() {
         }}
       />
     </>
+  )
+}
+
+/** FR-17: the vehicle QR code. Scanning it opens this page for a signed-in officer. */
+function QrSection({ rickshawId, number }: { rickshawId: number; number: string }) {
+  const { data, isError } = useQuery({ queryKey: ['rickshaw', rickshawId, 'qr'], queryFn: () => rickshawApi.qrPng(rickshawId), staleTime: Infinity })
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (!data) return
+    const u = URL.createObjectURL(data)
+    setUrl(u)
+    return () => {
+      URL.revokeObjectURL(u)
+      setUrl(null)
+    }
+  }, [data])
+
+  return (
+    <Section
+      title="QR code"
+      action={url && (
+        <Button size="small" startIcon={<DownloadOutlined />} component="a" href={url} download={`qr-${number}.png`}>Download</Button>
+      )}
+    >
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+        {url
+          ? <Box component="img" src={url} alt={`QR code for ${number}`} sx={{ width: 140, height: 140, display: 'block' }} />
+          : <Box sx={{ width: 140, height: 140, display: 'grid', placeItems: 'center' }}>{isError ? 'Unavailable' : null}</Box>}
+        <Typography variant="body2" color="text.secondary">
+          Printed on the registration card. An officer who scans it is taken to this page; anyone else sees only the
+          number, status and photo.
+        </Typography>
+      </Stack>
+    </Section>
   )
 }
 
