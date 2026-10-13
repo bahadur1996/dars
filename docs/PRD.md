@@ -42,7 +42,7 @@ On approval, step 1 is saving this PRD as `docs/PRD.md` in the repo.
 - **FR-9 Registration card**: printable PDF/HTML card with photo, number, thana and the vehicle QR code (FR-17; no driver code from v1.2).
 - **FR-10 Audit log**: who did what and when (create/update/status change/login; from v1.2 also ownership transfers, complaints and cases), viewable by Admin.
 - **FR-11 Dashboard**: totals, registrations per day/thana, top officers; from v1.2 also open complaints and open cases.
-- **FR-12 Mobile field capture**: register with the camera and look up by number or QR scan. Offline drafts are queued and synced when online (phase 3b).
+- **FR-12 Mobile field capture**: register with the camera, look up by number or QR scan, and (v1.2) file a case against a rickshaw and/or a driver with evidence photos. Offline drafts are queued and synced when online (phase 3b).
 - **FR-13 Ownership transfer** (v1.2): an OFFICER or ADMIN changes a rickshaw's owner to another registered owner (or a new owner created in the same flow), with an optional note. Each ownership period is kept with from/to dates and who made the change. Exactly one current owner per rickshaw. Transferring to the current owner is rejected (`SAME_OWNER`). Not subject to the 24h edit window.
 - **FR-14 Complaints** (v1.2): a **member of the public files a complaint** against a rickshaw or a driver through a public web form (no login). Officers and admins review and act on it.
   - Required: **rickshaw number**, **driver code**, **complainant name**, **complainant phone** (`^01[3-9]\d{8}$`), **complainant NID** (10 or 17 digits), description (≤ 2000 chars).
@@ -126,6 +126,7 @@ React web and React Native mobile → REST/JSON + JWT → Spring Boot → Postgr
 ### 2.3 Mobile (`mobile/`): React Native
 - React Native via Expo SDK (latest, `npx create-expo-app`), TypeScript, Android-first (most field officers use Android), Expo Router, TanStack Query, React Hook Form + Zod, expo-camera / expo-image-picker / expo-image-manipulator (compress), expo-secure-store (tokens), expo-barcode-scanner (QR lookup).
 - **Screens**: Login, Home (quick actions), Register Driver, Register Rickshaw (camera-first), Search/Scan, Detail, Drafts (offline queue, phase 3b).
+- **v1.2**: Register Rickshaw is photo → owner (existing or new) → details, with no driver step. Rickshaw detail shows the owner with "Change owner" (FR-13), ownership history, and complaints and cases (read only). Driver detail shows complaints and cases (read only). Search finds rickshaws (number, owner NID/mobile) or drivers. The QR scanner reads both `/r/<number>` (FR-17) and pre-v1.2 `/public/verify/<number>` cards. **Officers can file a case in the field** (FR-15: rickshaw and/or driver, offence, description, incident time in Dhaka time, thana, up to 3 evidence photos from the camera), from Home or preselected from a rickshaw or driver screen, and view it read-only. Handling complaints, escalating a complaint into a case, and case status changes stay in the web app.
 - Shared Zod schemas copied from `web/src/schemas` (a shared package is optional later).
 
 ---
@@ -205,5 +206,5 @@ Differences from the plan above, and why:
 
 ### 7.3 Scope of this change
 - Order: PRD → approval → backend → backend `CLAUDE.md` → web → web `CLAUDE.md`.
-- **Mobile is not in this round.** Its "Register Rickshaw" flow still sends `driverId` and shows the current driver, so it needs a follow-up update to keep working against the v1.2 backend. Its QR scanner (`mobile/src/lib/qr.ts`) only extracts the number from `/public/verify/<number>` URLs, so it must also accept the new `/r/<number>` URL.
+- **Mobile** was updated in a follow-up round (see §2.3, v1.2): the driver step and assignment history are removed, `driverId` is no longer sent, ownership transfer, complaint/case lists and case filing are added, `types.ts`/`schemas.ts` are re-copied from the web app, and the QR scanner accepts `/r/<number>` as well as the old verify URL.
 - Complaints are filed by the public through the unauthenticated complaint form (FR-14). The rest of the citizen portal stays out of scope.

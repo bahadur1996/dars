@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { router, useLocalSearchParams } from 'expo-router'
+import { router } from 'expo-router'
 import { useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { View } from 'react-native'
@@ -8,7 +8,6 @@ import { applyServerErrors, CField } from '../../components/FormFields'
 import { PhotoField } from '../../components/PhotoField'
 import { Banner, Button, Card, Chips, Screen, SectionLabel, Title } from '../../components/ui'
 import { ApiError, driverApi } from '../../lib/api'
-import { driverHandoff } from '../../lib/handoff'
 import { BLOOD_GROUPS, driverSchema, PATTERNS, type DriverForm, type DriverInput } from '../../lib/schemas'
 
 const ADDRESS = { division: 'Dhaka', district: 'Dhaka', thana: '', line: '' }
@@ -20,7 +19,6 @@ const EMPTY: DriverForm = {
 
 /** Driver registration form with identification details (FR-3), camera-first. */
 export default function RegisterDriverScreen() {
-  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>()
   const qc = useQueryClient()
   const { control, handleSubmit, setValue, getValues, setError, formState } = useForm<DriverForm, unknown, DriverInput>({
     resolver: zodResolver(driverSchema),
@@ -39,10 +37,7 @@ export default function RegisterDriverScreen() {
       try {
         const d = await driverApi.create(values)
         await qc.invalidateQueries({ queryKey: ['drivers'] })
-        if (returnTo === 'rickshaw') {
-          driverHandoff.put(d.id)
-          router.back()
-        } else router.replace(`/drivers/${d.id}`)
+        router.replace(`/drivers/${d.id}`)
       } catch (e) {
         if (e instanceof ApiError) {
           applyServerErrors(setError, e.fieldErrors)

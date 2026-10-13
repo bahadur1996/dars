@@ -1,16 +1,18 @@
 import Constants from 'expo-constants'
 import { secureStorage } from './storage'
 import type {
-  Assignment,
+  CaseFile,
+  Complaint,
   Driver,
   DriverSummary,
   Owner,
+  Ownership,
   Page,
   Rickshaw,
   TokenResponse,
   User,
 } from './types'
-import type { DriverInput, OwnerInput, RickshawInput } from './schemas'
+import type { CaseInput, DriverInput, OwnerInput, RickshawInput } from './schemas'
 
 /**
  * Backend base URL. Override with EXPO_PUBLIC_API_URL, e.g. http://192.168.1.20:8080/api/v1 for a phone
@@ -145,6 +147,8 @@ export const driverApi = {
   get: (id: number) => request<Driver>(`/drivers/${id}`),
   create: (d: DriverInput) => request<Driver>('/drivers', { method: 'POST', body: d }),
   checkNid: (nid: string) => request<{ exists: boolean; driver: DriverSummary | null }>('/drivers/check-nid', { query: { nid } }),
+  complaints: (id: number) => request<Complaint[]>(`/drivers/${id}/complaints`),
+  cases: (id: number) => request<CaseFile[]>(`/drivers/${id}/cases`),
 }
 
 export const ownerApi = {
@@ -157,7 +161,18 @@ export const rickshawApi = {
   get: (id: number) => request<Rickshaw>(`/rickshaws/${id}`),
   byNumber: (n: string) => request<Rickshaw>(`/rickshaws/by-number/${encodeURIComponent(n)}`),
   create: (r: RickshawInput) => request<Rickshaw>('/rickshaws', { method: 'POST', body: r }),
-  history: (id: number) => request<Assignment[]>(`/rickshaws/${id}/assignments`),
+  ownership: (id: number) => request<Ownership[]>(`/rickshaws/${id}/ownership`),
+  /** FR-13: hand the rickshaw to another registered owner. */
+  transferOwnership: (id: number, ownerId: number, note?: string) =>
+    request<Ownership>(`/rickshaws/${id}/ownership`, { method: 'POST', body: { ownerId, note } }),
+  complaints: (id: number) => request<Complaint[]>(`/rickshaws/${id}/complaints`),
+  cases: (id: number) => request<CaseFile[]>(`/rickshaws/${id}/cases`),
+}
+
+export const caseApi = {
+  get: (id: number) => request<CaseFile>(`/cases/${id}`),
+  /** FR-15: needs a rickshaw, a driver or both. Filing never changes their status. */
+  create: (c: CaseInput) => request<CaseFile>('/cases', { method: 'POST', body: c }),
 }
 
 export const photoApi = {

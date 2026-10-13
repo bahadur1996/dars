@@ -149,12 +149,15 @@ export function Plate({ number, size = 'md' }: { number: string; size?: 'sm' | '
   )
 }
 
+// Statuses shown calmly (green outline); anything else is highlighted in signal red.
+const SETTLED = new Set(['ACTIVE', 'RESOLVED', 'CLOSED'])
+
 export function StatusBadge({ status }: { status: string }) {
-  const active = status === 'ACTIVE'
+  const active = SETTLED.has(status)
   return (
     <View style={[styles.badge, active ? { borderColor: colors.plate } : { backgroundColor: colors.signal, borderColor: colors.signal }]}>
       <Text style={{ fontFamily: fonts.bodyBold, fontSize: 12, color: active ? colors.plate : colors.white }}>
-        {status.charAt(0) + status.slice(1).toLowerCase()}
+        {status.charAt(0) + status.slice(1).toLowerCase().replaceAll('_', ' ')}
       </Text>
     </View>
   )

@@ -39,7 +39,9 @@ function Navigator() {
         <Stack.Screen name="drivers/[id]" options={{ title: 'Driver' }} />
         <Stack.Screen name="rickshaws/new" options={{ title: 'Register rickshaw' }} />
         <Stack.Screen name="rickshaws/[id]" options={{ title: 'Rickshaw' }} />
-        <Stack.Screen name="search" options={{ title: 'Find a rickshaw' }} />
+        <Stack.Screen name="cases/new" options={{ title: 'File case' }} />
+        <Stack.Screen name="cases/[id]" options={{ title: 'Case' }} />
+        <Stack.Screen name="search" options={{ title: 'Find' }} />
         <Stack.Screen name="scan" options={{ title: 'Scan card', headerTransparent: true }} />
       </Stack.Protected>
     </Stack>

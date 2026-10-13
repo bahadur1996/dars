@@ -7,10 +7,11 @@ import { rickshawApi } from '../lib/api'
 import { useAuth } from '../lib/auth'
 
 const ACTIONS = [
-  { title: 'Register rickshaw', sub: 'Photo, driver and owner', href: '/rickshaws/new' },
+  { title: 'Register rickshaw', sub: 'Photo and owner', href: '/rickshaws/new' },
   { title: 'Register driver', sub: 'NID, photo and address', href: '/drivers/new' },
   { title: 'Scan card', sub: 'Check a QR registration card', href: '/scan' },
-  { title: 'Find', sub: 'By number, NID or mobile', href: '/search' },
+  { title: 'Find', sub: 'Rickshaws or drivers', href: '/search' },
+  { title: 'File case', sub: 'Against a rickshaw or driver', href: '/cases/new' },
 ] as const
 
 export default function HomeScreen() {
@@ -54,7 +55,7 @@ export default function HomeScreen() {
           <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}>
             <Plate number={r.rickshawNumber} size="sm" />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: fonts.body, color: colors.ink }} numberOfLines={1}>{r.currentDriver?.fullName ?? 'No driver'}</Text>
+              <Text style={{ fontFamily: fonts.body, color: colors.ink }} numberOfLines={1}>{r.owner.fullName}</Text>
               <Muted>{r.thana}</Muted>
             </View>
             <StatusBadge status={r.status} />

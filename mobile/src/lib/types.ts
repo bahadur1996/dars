@@ -4,6 +4,9 @@ export type Role = 'ADMIN' | 'OFFICER'
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER'
 export type DriverStatus = 'ACTIVE' | 'SUSPENDED' | 'BLACKLISTED'
 export type RickshawStatus = 'ACTIVE' | 'SUSPENDED' | 'IMPOUNDED'
+export type ComplaintStatus = 'OPEN' | 'RESOLVED' | 'REJECTED' | 'ESCALATED'
+export type ComplaintCategory = 'OVERCHARGING' | 'MISBEHAVIOUR' | 'RECKLESS_DRIVING' | 'ACCIDENT' | 'THEFT' | 'OTHER'
+export type CaseStatus = 'OPEN' | 'UNDER_INVESTIGATION' | 'CLOSED' | 'DISMISSED'
 
 export interface Page<T> {
   content: T[]
@@ -78,7 +81,6 @@ export interface Driver {
   nidFrontId: string | null
   nidBackId: string | null
   status: DriverStatus
-  currentRickshaw: { id: number; rickshawNumber: string } | null
   registeredBy: UserRef
   registeredAt: string
   updatedAt: string
@@ -106,18 +108,88 @@ export interface Rickshaw {
   rearPhotoId: string | null
   status: RickshawStatus
   owner: Owner
-  currentDriver: DriverSummary | null
   registeredBy: UserRef
   registeredAt: string
   updatedAt: string
 }
 
-export interface Assignment {
+export interface RickshawRef {
   id: number
-  driver: DriverSummary
+  rickshawNumber: string
+}
+
+export interface Ownership {
+  id: number
+  owner: Owner
   fromDate: string
   toDate: string | null
-  assignedBy: UserRef
+  changedBy: UserRef
+  note: string | null
+}
+
+export interface CaseRef {
+  id: number
+  caseNo: string
+  status: CaseStatus
+}
+
+export interface ComplaintRef {
+  id: number
+  complaintNo: string
+}
+
+export interface Complaint {
+  id: number
+  complaintNo: string
+  rickshaw: RickshawRef
+  driver: DriverSummary
+  complainantName: string
+  complainantPhone: string
+  complainantNid: string
+  category: ComplaintCategory
+  description: string
+  incidentAt: string | null
+  thana: string | null
+  status: ComplaintStatus
+  resolutionNote: string | null
+  caseFile: CaseRef | null
+  handledBy: UserRef | null
+  filedAt: string
+  updatedAt: string
+}
+
+/** What the public form and status lookup return: no personal data. */
+export interface PublicComplaint {
+  complaintNo: string
+  status: ComplaintStatus
+  filedAt: string
+  resolutionNote: string | null
+}
+
+/** What the public verify endpoint returns for a scanned QR code: no personal data. */
+export interface PublicVerify {
+  rickshawNumber: string
+  status: RickshawStatus
+  registeredAt: string
+}
+
+export interface CaseFile {
+  id: number
+  caseNo: string
+  rickshaw: RickshawRef | null
+  driver: DriverSummary | null
+  complaint: ComplaintRef | null
+  offence: string
+  description: string
+  incidentAt: string
+  thana: string
+  status: CaseStatus
+  resolutionNote: string | null
+  evidencePhotoIds: string[]
+  filedBy: UserRef
+  filedAt: string
+  updatedAt: string
+  closedAt: string | null
 }
 
 export interface AuditEntry {
@@ -140,6 +212,9 @@ export interface DashboardSummary {
   activeRickshaws: number
   totalDrivers: number
   registeredToday: number
+  openComplaints: number
+  /** OPEN and UNDER_INVESTIGATION. */
+  openCases: number
   perDay: Count[]
   perThana: Count[]
   topOfficers: Count[]
