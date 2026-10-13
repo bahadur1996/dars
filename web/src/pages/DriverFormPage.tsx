@@ -3,7 +3,7 @@ import { Alert, Box, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextFi
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
-import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
 import { apiError } from '../api/client'
 import { driverApi } from '../api/endpoints'
 import type { Driver } from '../api/types'
@@ -32,8 +32,6 @@ function toForm(d: Driver): DriverForm {
 export function DriverFormPage() {
   const { id } = useParams()
   const editing = id !== undefined
-  const [search] = useSearchParams()
-  const returnTo = search.get('returnTo')
   const navigate = useNavigate()
   const qc = useQueryClient()
   const existing = useQuery({ queryKey: ['driver', Number(id)], queryFn: () => driverApi.get(Number(id)), enabled: editing })
@@ -61,7 +59,7 @@ export function DriverFormPage() {
       const saved = editing ? await driverApi.update(Number(id), values) : await driverApi.create(values)
       await qc.invalidateQueries({ queryKey: ['drivers'] })
       qc.setQueryData(['driver', saved.id], saved)
-      navigate(returnTo === 'rickshaw' ? `/rickshaws/new?driverId=${saved.id}` : `/drivers/${saved.id}`)
+      navigate(`/drivers/${saved.id}`)
     } catch (e) {
       setError(applyServerErrors(form, apiError(e)))
     }

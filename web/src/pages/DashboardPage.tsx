@@ -16,11 +16,13 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader title="Dashboard" subtitle="Registrations across Dhaka, updated live." />
-      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, mb: 3 }}>
+      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(3, 1fr)', lg: 'repeat(6, 1fr)' }, mb: 3 }}>
         <Stat label="Rickshaws registered" value={s?.totalRickshaws} />
         <Stat label="Active rickshaws" value={s?.activeRickshaws} />
         <Stat label="Drivers registered" value={s?.totalDrivers} />
         <Stat label="Registered today" value={s?.registeredToday} />
+        <Stat label="Open complaints" value={s?.openComplaints} to="/complaints?status=OPEN" />
+        <Stat label="Open cases" value={s?.openCases} to="/cases?status=OPEN" />
       </Box>
 
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' }, mb: 2 }}>
@@ -55,7 +57,7 @@ export function DashboardPage() {
                 <Plate number={r.rickshawNumber} size="sm" />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="body2" noWrap>
-                    {r.currentDriver?.fullName ?? 'No driver'} · {r.thana}
+                    {r.owner.fullName} · {r.thana}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {formatDate(r.registeredAt)} by {r.registeredBy.fullName}
@@ -74,9 +76,10 @@ export function DashboardPage() {
   )
 }
 
-function Stat({ label, value }: { label: string; value: number | undefined }) {
+function Stat({ label, value, to }: { label: string; value: number | undefined; to?: string }) {
+  const link = to ? { component: RouterLink, to, sx: { textDecoration: 'none', color: 'inherit', '&:hover': { borderColor: colors.plate } } } : {}
   return (
-    <Box sx={{ bgcolor: colors.white, border: `1px solid ${colors.rule}`, borderRadius: 1.5, p: 2 }}>
+    <Box {...link} sx={{ display: 'block', bgcolor: colors.white, border: `1px solid ${colors.rule}`, borderRadius: 1.5, p: 2, ...(link.sx ?? {}) }}>
       <Typography sx={{ fontFamily: fonts.display, fontWeight: 700, fontSize: '2.2rem', lineHeight: 1.1 }}>
         {value === undefined ? <Skeleton width={60} /> : value.toLocaleString('en-IN')}
       </Typography>

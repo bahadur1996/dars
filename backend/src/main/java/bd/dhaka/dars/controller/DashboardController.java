@@ -1,6 +1,10 @@
 package bd.dhaka.dars.controller;
 
+import bd.dhaka.dars.entity.CaseStatus;
+import bd.dhaka.dars.entity.ComplaintStatus;
 import bd.dhaka.dars.entity.RickshawStatus;
+import bd.dhaka.dars.repository.CaseRepository;
+import bd.dhaka.dars.repository.ComplaintRepository;
 import bd.dhaka.dars.repository.DriverRepository;
 import bd.dhaka.dars.repository.RickshawRepository;
 import bd.dhaka.dars.service.RickshawService;
@@ -24,17 +28,23 @@ public class DashboardController {
 
     private final RickshawRepository rickshaws;
     private final DriverRepository drivers;
+    private final ComplaintRepository complaints;
+    private final CaseRepository cases;
 
-    public DashboardController(RickshawRepository rickshaws, DriverRepository drivers) {
+    public DashboardController(RickshawRepository rickshaws, DriverRepository drivers,
+                               ComplaintRepository complaints, CaseRepository cases) {
         this.rickshaws = rickshaws;
         this.drivers = drivers;
+        this.complaints = complaints;
+        this.cases = cases;
     }
 
     public record Count(String label, long count) {
     }
 
+    /** {@code openCases} counts OPEN and UNDER_INVESTIGATION. */
     public record Summary(long totalRickshaws, long activeRickshaws, long totalDrivers, long registeredToday,
-                          List<Count> perDay, List<Count> perThana, List<Count> topOfficers) {
+                          long openComplaints, long openCases, List<Count> perDay, List<Count> perThana, List<Count> topOfficers) {
     }
 
     @GetMapping("/summary")
@@ -57,6 +67,8 @@ public class DashboardController {
                 rickshaws.countByStatus(RickshawStatus.ACTIVE),
                 drivers.count(),
                 byDay.getOrDefault(today, 0L),
+                complaints.countByStatus(ComplaintStatus.OPEN),
+                cases.countByStatusIn(List.of(CaseStatus.OPEN, CaseStatus.UNDER_INVESTIGATION)),
                 perDay,
                 toCounts(rickshaws.countByThana()),
                 toCounts(rickshaws.countByOfficer()));

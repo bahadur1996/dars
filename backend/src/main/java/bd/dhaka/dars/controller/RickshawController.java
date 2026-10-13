@@ -1,15 +1,19 @@
 package bd.dhaka.dars.controller;
 
+import bd.dhaka.dars.dto.CaseDtos.CaseResponse;
+import bd.dhaka.dars.dto.ComplaintDtos.ComplaintResponse;
 import bd.dhaka.dars.dto.PageResponse;
-import bd.dhaka.dars.dto.RickshawDtos.AssignRequest;
-import bd.dhaka.dars.dto.RickshawDtos.AssignmentResponse;
+import bd.dhaka.dars.dto.RickshawDtos.OwnershipResponse;
 import bd.dhaka.dars.dto.RickshawDtos.RickshawRequest;
 import bd.dhaka.dars.dto.RickshawDtos.RickshawResponse;
 import bd.dhaka.dars.dto.RickshawDtos.StatusRequest;
+import bd.dhaka.dars.dto.RickshawDtos.TransferRequest;
 import bd.dhaka.dars.entity.Rickshaw;
 import bd.dhaka.dars.entity.RickshawStatus;
-import bd.dhaka.dars.service.AssignmentService;
 import bd.dhaka.dars.service.CardService;
+import bd.dhaka.dars.service.CaseService;
+import bd.dhaka.dars.service.ComplaintService;
+import bd.dhaka.dars.service.OwnershipService;
 import bd.dhaka.dars.service.RickshawService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -40,12 +44,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class RickshawController {
 
     private final RickshawService service;
-    private final AssignmentService assignments;
+    private final OwnershipService ownerships;
+    private final ComplaintService complaints;
+    private final CaseService cases;
     private final CardService cards;
 
-    public RickshawController(RickshawService service, AssignmentService assignments, CardService cards) {
+    public RickshawController(RickshawService service, OwnershipService ownerships, ComplaintService complaints,
+                              CaseService cases, CardService cards) {
         this.service = service;
-        this.assignments = assignments;
+        this.ownerships = ownerships;
+        this.complaints = complaints;
+        this.cases = cases;
         this.cards = cards;
     }
 
@@ -92,24 +101,37 @@ public class RickshawController {
         return toResponse(service.updateStatus(id, req.status(), req.reason()));
     }
 
-    @GetMapping("/{id}/assignments")
+    @GetMapping("/{id}/ownership")
     @Transactional(readOnly = true)
-    public List<AssignmentResponse> history(@PathVariable Long id) {
-        return assignments.history(service.get(id)).stream().map(AssignmentResponse::from).toList();
+    public List<OwnershipResponse> ownershipHistory(@PathVariable Long id) {
+        return ownerships.history(service.get(id)).stream().map(OwnershipResponse::from).toList();
     }
 
-    @PostMapping("/{id}/assignments")
+    @PostMapping("/{id}/ownership")
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
-    public AssignmentResponse reassign(@PathVariable Long id, @Valid @RequestBody AssignRequest req) {
-        return AssignmentResponse.from(service.reassign(id, req.driverId()));
+    public OwnershipResponse transferOwnership(@PathVariable Long id, @Valid @RequestBody TransferRequest req) {
+        return OwnershipResponse.from(service.transferOwnership(id, req.ownerId(), req.note()));
+    }
+
+    @GetMapping("/{id}/complaints")
+    @Transactional(readOnly = true)
+    public List<ComplaintResponse> complaints(@PathVariable Long id) {
+        return complaints.forRickshaw(service.get(id)).stream()
+                .map(c -> ComplaintResponse.from(c, complaints.caseOf(c))).toList();
+    }
+
+    @GetMapping("/{id}/cases")
+    @Transactional(readOnly = true)
+    public List<CaseResponse> cases(@PathVariable Long id) {
+        return cases.forRickshaw(service.get(id)).stream().map(CaseResponse::from).toList();
     }
 
     @GetMapping(value = "/{id}/card.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @Transactional(readOnly = true)
     public ResponseEntity<byte[]> card(@PathVariable Long id) {
         Rickshaw r = service.get(id);
-        byte[] pdf = cards.render(r, assignments.currentDriverOf(r));
+        byte[] pdf = cards.render(r);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
@@ -118,6 +140,6 @@ public class RickshawController {
     }
 
     private RickshawResponse toResponse(Rickshaw r) {
-        return RickshawResponse.from(r, assignments.currentDriverOf(r));
+        return RickshawResponse.from(r);
     }
 }

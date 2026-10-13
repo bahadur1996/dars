@@ -27,6 +27,9 @@ dars:
     username: ${DARS_ADMIN_USERNAME:admin}
     password: ${DARS_ADMIN_PASSWORD:Admin@12345}
     full-name: System Administrator
+  public-limits:
+    complaints-per-hour: ${DARS_PUBLIC_COMPLAINTS_PER_HOUR:5}
+    lookups-per-hour: ${DARS_PUBLIC_LOOKUPS_PER_HOUR:30}
 
 management:
   endpoints:

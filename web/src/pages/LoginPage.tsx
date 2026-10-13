@@ -1,6 +1,6 @@
 import { Box, Button, Stack, TextField, Typography } from '@mui/material'
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link as RouterLink, Navigate, useLocation } from 'react-router-dom'
 import { apiError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { FormAlert } from '../components/forms'
@@ -49,7 +49,7 @@ export function LoginPage() {
         <Box>
           <Plate number="DHK-AR-000001" size="lg" />
           <Typography sx={{ fontFamily: fonts.display, fontSize: '2.6rem', fontWeight: 600, lineHeight: 1.05, mt: 4, maxWidth: 460 }}>
-            Every auto-rickshaw in Dhaka, with a number and a known driver.
+            Every auto-rickshaw in Dhaka, with a number and a known owner.
           </Typography>
         </Box>
         <Typography variant="body2" sx={{ opacity: 0.6 }}>
@@ -72,6 +72,10 @@ export function LoginPage() {
               {busy ? 'Signing in…' : 'Sign in'}
             </Button>
           </Stack>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 4 }}>
+            Not an officer? <Button component={RouterLink} to="/complain" size="small">File a complaint</Button> about a
+            rickshaw or its driver, or <Button component={RouterLink} to="/complain/status" size="small">check a complaint</Button>.
+          </Typography>
         </Box>
       </Box>
     </Box>

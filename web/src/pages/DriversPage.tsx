@@ -6,7 +6,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { driverApi } from '../api/endpoints'
 import { AuthImage } from '../components/AuthImage'
 import { EmptyState, formatDate, Mono, PageHeader, StatusChip } from '../components/common'
-import { Plate } from '../components/Plate'
 
 export function DriversPage() {
   const { t } = useTranslation()
@@ -59,7 +58,6 @@ export function DriversPage() {
                   <TableCell>Driver code</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>NID</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Mobile</TableCell>
-                  <TableCell>Drives</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Registered</TableCell>
                 </TableRow>
@@ -80,7 +78,6 @@ export function DriversPage() {
                     <TableCell><Mono>{d.driverCode}</Mono></TableCell>
                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}><Mono>{d.nid}</Mono></TableCell>
                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}><Mono>{d.mobile}</Mono></TableCell>
-                    <TableCell>{d.currentRickshaw ? <Plate number={d.currentRickshaw.rickshawNumber} size="sm" /> : <Typography variant="caption" color="text.secondary">None</Typography>}</TableCell>
                     <TableCell><StatusChip status={d.status} /></TableCell>
                     <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>{formatDate(d.registeredAt)}</TableCell>
                   </TableRow>

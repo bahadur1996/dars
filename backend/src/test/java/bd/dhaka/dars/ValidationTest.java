@@ -2,14 +2,19 @@ package bd.dhaka.dars;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import bd.dhaka.dars.dto.CaseDtos.CaseRequest;
+import bd.dhaka.dars.dto.ComplaintDtos.PublicComplaintRequest;
 import bd.dhaka.dars.dto.DriverDtos.DriverRequest;
 import bd.dhaka.dars.dto.RickshawDtos.RickshawRequest;
 import bd.dhaka.dars.entity.Address;
+import bd.dhaka.dars.entity.ComplaintCategory;
 import bd.dhaka.dars.entity.Gender;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -69,7 +74,7 @@ class ValidationTest {
     @Test
     void rickshawNumberIsNormalisedToUppercase() {
         RickshawRequest req = new RickshawRequest(" dhk-12a ", null, null, null, null, "Mirpur",
-                UUID.randomUUID(), null, 1L, 1L);
+                UUID.randomUUID(), null, 1L);
         assertThat(req.rickshawNumber()).isEqualTo("DHK-12A");
         assertThat(invalidFields(req)).isEmpty();
     }
@@ -78,15 +83,42 @@ class ValidationTest {
     @ValueSource(strings = {"AB", "DHK 123", "DHK_123", "ঢাকা-১২৩", "ABCDEFGHIJKLMNOPQRSTU"})
     void rickshawNumberMustBeAlphanumeric(String number) {
         RickshawRequest req = new RickshawRequest(number, null, null, null, null, "Mirpur",
-                UUID.randomUUID(), null, 1L, 1L);
+                UUID.randomUUID(), null, 1L);
         assertThat(invalidFields(req)).contains("rickshawNumber");
     }
 
     @Test
     void blankRickshawNumberMeansAutoIssue() {
         RickshawRequest req = new RickshawRequest("  ", null, null, null, null, "Mirpur",
-                UUID.randomUUID(), null, 1L, 1L);
+                UUID.randomUUID(), null, 1L);
         assertThat(req.rickshawNumber()).isNull();
         assertThat(invalidFields(req)).isEmpty();
+    }
+
+    @Test
+    void complaintNeedsRickshawDriverAndComplainantDetails() {
+        PublicComplaintRequest req = new PublicComplaintRequest(" ", null, "", "999", "123", null, "", null, null,
+                null);
+        assertThat(invalidFields(req)).contains("rickshawNumber", "driverCode", "complainantName",
+                "complainantPhone", "complainantNid", "description");
+    }
+
+    @Test
+    void complaintIsNormalised() {
+        PublicComplaintRequest req = new PublicComplaintRequest(" dhk-ar-000001 ", "drv-2026-000001 ", " Rina ",
+                "01712345678", "1234567890", null, " Rude driver ", null, " ", null);
+        assertThat(req.rickshawNumber()).isEqualTo("DHK-AR-000001");
+        assertThat(req.driverCode()).isEqualTo("DRV-2026-000001");
+        assertThat(req.category()).isEqualTo(ComplaintCategory.OTHER);
+        assertThat(req.thana()).isNull();
+        assertThat(invalidFields(req)).isEmpty();
+    }
+
+    @Test
+    void caseAllowsAtMostThreeEvidencePhotos() {
+        CaseRequest req = new CaseRequest(1L, null, null, "Overcharging", "Details", Instant.now(),
+                "Mirpur", List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID()));
+        assertThat(invalidFields(req)).containsExactly("evidencePhotoIds");
     }
 }

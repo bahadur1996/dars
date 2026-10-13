@@ -1,20 +1,25 @@
 import { api } from './client'
 import type {
-  Assignment,
   AuditEntry,
+  CaseFile,
+  CaseStatus,
+  Complaint,
+  ComplaintStatus,
   DashboardSummary,
   Driver,
   DriverStatus,
   DriverSummary,
   Owner,
+  Ownership,
   Page,
+  PublicComplaint,
   Rickshaw,
   RickshawStatus,
   Role,
   TokenResponse,
   User,
 } from './types'
-import type { DriverInput, OwnerInput, RickshawInput } from '../schemas'
+import type { CaseInput, DriverInput, OwnerInput, PublicComplaintInput, RickshawInput } from '../schemas'
 
 type Params = Record<string, string | number | undefined>
 
@@ -49,6 +54,8 @@ export const driverApi = {
     api
       .get<{ exists: boolean; driver: DriverSummary | null }>('/drivers/check-nid', { params: { nid } })
       .then((r) => r.data),
+  complaints: (id: number) => api.get<Complaint[]>(`/drivers/${id}/complaints`).then((r) => r.data),
+  cases: (id: number) => api.get<CaseFile[]>(`/drivers/${id}/cases`).then((r) => r.data),
 }
 
 export const ownerApi = {
@@ -65,10 +72,37 @@ export const rickshawApi = {
   update: (id: number, r: RickshawInput) => api.put<Rickshaw>(`/rickshaws/${id}`, r).then((res) => res.data),
   setStatus: (id: number, status: RickshawStatus, reason?: string) =>
     api.patch<Rickshaw>(`/rickshaws/${id}/status`, { status, reason }).then((r) => r.data),
-  history: (id: number) => api.get<Assignment[]>(`/rickshaws/${id}/assignments`).then((r) => r.data),
-  reassign: (id: number, driverId: number) =>
-    api.post<Assignment>(`/rickshaws/${id}/assignments`, { driverId }).then((r) => r.data),
+  ownership: (id: number) => api.get<Ownership[]>(`/rickshaws/${id}/ownership`).then((r) => r.data),
+  transferOwnership: (id: number, ownerId: number, note?: string) =>
+    api.post<Ownership>(`/rickshaws/${id}/ownership`, { ownerId, note }).then((r) => r.data),
+  complaints: (id: number) => api.get<Complaint[]>(`/rickshaws/${id}/complaints`).then((r) => r.data),
+  cases: (id: number) => api.get<CaseFile[]>(`/rickshaws/${id}/cases`).then((r) => r.data),
   cardPdf: (id: number) => api.get<Blob>(`/rickshaws/${id}/card.pdf`, { responseType: 'blob' }).then((r) => r.data),
+}
+
+export const complaintApi = {
+  search: (p: Params) => api.get<Page<Complaint>>('/complaints', { params: clean(p) }).then((r) => r.data),
+  get: (id: number) => api.get<Complaint>(`/complaints/${id}`).then((r) => r.data),
+  setStatus: (id: number, status: ComplaintStatus, note: string) =>
+    api.patch<Complaint>(`/complaints/${id}/status`, { status, note }).then((r) => r.data),
+}
+
+export const caseApi = {
+  search: (p: Params) => api.get<Page<CaseFile>>('/cases', { params: clean(p) }).then((r) => r.data),
+  get: (id: number) => api.get<CaseFile>(`/cases/${id}`).then((r) => r.data),
+  create: (c: CaseInput) => api.post<CaseFile>('/cases', c).then((r) => r.data),
+  setStatus: (id: number, status: CaseStatus, note: string) =>
+    api.patch<CaseFile>(`/cases/${id}/status`, { status, note }).then((r) => r.data),
+}
+
+/** Unauthenticated endpoints used by the public complaint pages. */
+export const publicApi = {
+  fileComplaint: (c: PublicComplaintInput) =>
+    api.post<PublicComplaint>('/public/complaints', c).then((r) => r.data),
+  complaintStatus: (complaintNo: string, phone: string) =>
+    api
+      .get<PublicComplaint>(`/public/complaints/${encodeURIComponent(complaintNo)}`, { params: { phone } })
+      .then((r) => r.data),
 }
 
 export const userApi = {

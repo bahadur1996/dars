@@ -1,10 +1,8 @@
 package bd.dhaka.dars.dto;
 
-import bd.dhaka.dars.dto.DriverDtos.DriverSummary;
 import bd.dhaka.dars.dto.OwnerDtos.OwnerResponse;
 import bd.dhaka.dars.dto.UserDtos.UserRef;
-import bd.dhaka.dars.entity.Assignment;
-import bd.dhaka.dars.entity.Driver;
+import bd.dhaka.dars.entity.Ownership;
 import bd.dhaka.dars.entity.Photo;
 import bd.dhaka.dars.entity.Rickshaw;
 import bd.dhaka.dars.entity.RickshawStatus;
@@ -23,7 +21,7 @@ public final class RickshawDtos {
 
     /**
      * Rickshaw registration (FR-5). Leave {@code rickshawNumber} blank to have DARS issue one.
-     * {@code driverId} is used on create only; use the assignments endpoint to reassign.
+     * {@code ownerId} is required on create and ignored on update; use the ownership endpoint to transfer (FR-13).
      */
     public record RickshawRequest(
             @Pattern(regexp = Patterns.RICKSHAW_NUMBER,
@@ -35,8 +33,7 @@ public final class RickshawDtos {
             @NotBlank @Size(max = 50) String thana,
             @NotNull UUID photoId,
             UUID rearPhotoId,
-            @NotNull Long ownerId,
-            Long driverId) {
+            Long ownerId) {
 
         public RickshawRequest {
             rickshawNumber = rickshawNumber == null || rickshawNumber.isBlank()
@@ -53,7 +50,12 @@ public final class RickshawDtos {
         }
     }
 
-    public record AssignRequest(@NotNull Long driverId) {
+    /** FR-13: hand the rickshaw over to another registered owner. */
+    public record TransferRequest(@NotNull Long ownerId, @Size(max = 500) String note) {
+
+        public TransferRequest {
+            note = note == null || note.isBlank() ? null : note.trim();
+        }
     }
 
     public record StatusRequest(@NotNull RickshawStatus status, @Size(max = 500) String reason) {
@@ -62,22 +64,30 @@ public final class RickshawDtos {
     public record RickshawResponse(
             Long id, String rickshawNumber, String chassisNo, String motorNo, String color, String model,
             String thana, UUID photoId, UUID rearPhotoId, RickshawStatus status, OwnerResponse owner,
-            DriverSummary currentDriver, UserRef registeredBy, Instant registeredAt, Instant updatedAt) {
+            UserRef registeredBy, Instant registeredAt, Instant updatedAt) {
 
-        public static RickshawResponse from(Rickshaw r, Driver currentDriver) {
+        public static RickshawResponse from(Rickshaw r) {
             return new RickshawResponse(r.getId(), r.getRickshawNumber(), r.getChassisNo(), r.getMotorNo(),
                     r.getColor(), r.getModel(), r.getThana(), idOf(r.getPhoto()), idOf(r.getRearPhoto()),
-                    r.getStatus(), OwnerResponse.from(r.getOwner()), DriverSummary.from(currentDriver),
-                    UserRef.from(r.getRegisteredBy()), r.getRegisteredAt(), r.getUpdatedAt());
+                    r.getStatus(), OwnerResponse.from(r.getOwner()), UserRef.from(r.getRegisteredBy()),
+                    r.getRegisteredAt(), r.getUpdatedAt());
         }
     }
 
-    public record AssignmentResponse(Long id, DriverSummary driver, Instant fromDate, Instant toDate,
-                                     UserRef assignedBy) {
+    /** Compact rickshaw reference embedded in complaint and case responses. */
+    public record RickshawRef(Long id, String rickshawNumber) {
 
-        public static AssignmentResponse from(Assignment a) {
-            return new AssignmentResponse(a.getId(), DriverSummary.from(a.getDriver()), a.getFromDate(),
-                    a.getToDate(), UserRef.from(a.getAssignedBy()));
+        public static RickshawRef from(Rickshaw r) {
+            return r == null ? null : new RickshawRef(r.getId(), r.getRickshawNumber());
+        }
+    }
+
+    public record OwnershipResponse(Long id, OwnerResponse owner, Instant fromDate, Instant toDate,
+                                    UserRef changedBy, String note) {
+
+        public static OwnershipResponse from(Ownership o) {
+            return new OwnershipResponse(o.getId(), OwnerResponse.from(o.getOwner()), o.getFromDate(),
+                    o.getToDate(), UserRef.from(o.getChangedBy()), o.getNote());
         }
     }
 

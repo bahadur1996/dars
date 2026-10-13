@@ -1,5 +1,7 @@
 package bd.dhaka.dars.controller;
 
+import bd.dhaka.dars.dto.CaseDtos.CaseResponse;
+import bd.dhaka.dars.dto.ComplaintDtos.ComplaintResponse;
 import bd.dhaka.dars.dto.DriverDtos.DriverRequest;
 import bd.dhaka.dars.dto.DriverDtos.DriverResponse;
 import bd.dhaka.dars.dto.DriverDtos.DriverSummary;
@@ -8,9 +10,11 @@ import bd.dhaka.dars.dto.DriverDtos.StatusRequest;
 import bd.dhaka.dars.dto.PageResponse;
 import bd.dhaka.dars.entity.Driver;
 import bd.dhaka.dars.entity.DriverStatus;
-import bd.dhaka.dars.service.AssignmentService;
+import bd.dhaka.dars.service.CaseService;
+import bd.dhaka.dars.service.ComplaintService;
 import bd.dhaka.dars.service.DriverService;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -32,11 +36,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class DriverController {
 
     private final DriverService service;
-    private final AssignmentService assignments;
+    private final ComplaintService complaints;
+    private final CaseService cases;
 
-    public DriverController(DriverService service, AssignmentService assignments) {
+    public DriverController(DriverService service, ComplaintService complaints, CaseService cases) {
         this.service = service;
-        this.assignments = assignments;
+        this.complaints = complaints;
+        this.cases = cases;
     }
 
     @GetMapping
@@ -81,7 +87,20 @@ public class DriverController {
         return toResponse(service.updateStatus(id, req.status(), req.reason()));
     }
 
+    @GetMapping("/{id}/complaints")
+    @Transactional(readOnly = true)
+    public List<ComplaintResponse> complaints(@PathVariable Long id) {
+        return complaints.forDriver(service.get(id)).stream()
+                .map(c -> ComplaintResponse.from(c, complaints.caseOf(c))).toList();
+    }
+
+    @GetMapping("/{id}/cases")
+    @Transactional(readOnly = true)
+    public List<CaseResponse> cases(@PathVariable Long id) {
+        return cases.forDriver(service.get(id)).stream().map(CaseResponse::from).toList();
+    }
+
     private DriverResponse toResponse(Driver d) {
-        return DriverResponse.from(d, assignments.currentRickshawOf(d));
+        return DriverResponse.from(d);
     }
 }

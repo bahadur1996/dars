@@ -9,12 +9,12 @@ On approval, step 1 is saving this PRD as `docs/PRD.md` in the repo.
 
 ## Feedback on the requirements (assumptions made)
 1. **Mobile = React Native** (confirmed by the user). It's TypeScript, built with the **Expo** framework, the officially recommended way to start React Native apps. Expo gives camera, secure storage and QR scanning without native setup and can still produce standalone Android/iOS builds. Validation and API-client code are shared with the React web app.
-2. **"Driver, alphanumeric"** is read as a system-generated **Driver Code** (e.g. `DRV-2026-000123`) linked to the rickshaw, separate from the driver's name and NID.
+2. **"Driver, alphanumeric"** is read as a system-generated **Driver Code** (e.g. `DRV-2026-000123`), separate from the driver's name and NID. *(v1.2: drivers and rickshaws are registered independently; see §7.)*
 3. **Rickshaw number**: unregistered vehicles have no official plate, so DARS **issues** a number (e.g. `DHK-AR-000123`) by default. Officers can also enter an existing local/union number, which must be unique and alphanumeric (`^[A-Z0-9-]{3,20}$`).
 4. **"Authorized person"** means role-based access: **Admin** manages officers; **Officer** registers. Every record keeps `registeredBy` and `registeredAt`, and an audit log records all changes.
-5. **One active driver per rickshaw**; a driver can drive at most one rickshaw at a time. Reassignment is allowed and history is kept.
-6. **Missing items worth adding**: the owner of the rickshaw (often not the driver), duplicate detection by NID, a printable registration card/sticker with a QR code, and Bangla + English UI. The owner and QR card are in scope; Bangla i18n is set up but strings are English first.
-7. **Privacy**: NID and photos are personal data. They're served only to authenticated users, uploads are size/type-checked, and nothing is public.
+5. ~~**One active driver per rickshaw**; a driver can drive at most one rickshaw at a time. Reassignment is allowed and history is kept.~~ **Removed in v1.2**: in practice drivers move between rickshaws, so DARS no longer links a driver to a rickshaw.
+6. **Missing items worth adding**: the owner of the rickshaw (often not the driver; ownership can change, see FR-13), duplicate detection by NID, a printable registration card/sticker with a QR code, and Bangla + English UI. The owner and QR card are in scope; Bangla i18n is set up but strings are English first.
+7. **Privacy**: NID and photos are personal data. They're served only to authenticated users, uploads are size/type-checked, and nothing personal is public. The public complaint endpoints accept personal data but never return it.
 
 ---
 
@@ -24,8 +24,8 @@ On approval, step 1 is saving this PRD as `docs/PRD.md` in the repo.
 | Role | Can |
 |---|---|
 | ADMIN | Everything; create/disable officers; edit/suspend any record; view audit log |
-| OFFICER | Register drivers, owners and rickshaws; edit own records within 24h; search/view all |
-| (Public) | Nothing. All endpoints require login except `/auth/login` and a QR verify endpoint that returns only number, status and photo thumbnail |
+| OFFICER | Register drivers, owners and rickshaws; edit own records within 24h; transfer rickshaw ownership; review complaints and file cases; search/view all |
+| (Public) | Nothing else. All endpoints require login except `/auth/login`, a QR verify endpoint that returns only number, status and photo thumbnail, and (v1.2) the public complaint form and complaint status lookup |
 
 ### 1.2 Functional requirements
 - **FR-1 Auth**: username/password login, JWT access token (15 min) + refresh token (7 days), logout, change password. Lockout after 5 failed attempts for 15 min.
@@ -35,14 +35,30 @@ On approval, step 1 is saving this PRD as `docs/PRD.md` in the repo.
   - Optional: driving licence number, blood group, emergency contact name/phone, NID front/back scans
   - System: `driverCode` (generated, alphanumeric, unique), status (ACTIVE/SUSPENDED/BLACKLISTED), registeredBy/At
 - **FR-4 Owner**: name, NID, mobile, address. It can be the same person as the driver (checkbox that copies the driver's data).
-- **FR-5 Rickshaw registration**: `rickshawNumber` (issued or entered, alphanumeric, unique), chassis/motor number (optional), color, manufacturer/model (optional), operating area/thana, **rickshaw photo** (required; optional second photo of the rear), owner, **assigned driver** (required), status (ACTIVE/SUSPENDED/IMPOUNDED).
-- **FR-6 Driver assignment**: assign/reassign a driver to a rickshaw; each assignment has from/to dates; one active assignment per rickshaw and per driver.
-- **FR-7 Search & list**: paginated, filterable by number, driver code, NID, mobile, thana, status and date range.
-- **FR-8 Detail views**: rickshaw + current driver + owner + photos + assignment history; driver + current rickshaw.
-- **FR-9 Registration card**: printable PDF/HTML card with photo, number, driver code and a QR code linking to the verify endpoint.
-- **FR-10 Audit log**: who did what and when (create/update/status change/login), viewable by Admin.
-- **FR-11 Dashboard**: totals, registrations per day/thana, top officers.
+- **FR-5 Rickshaw registration**: `rickshawNumber` (issued or entered, alphanumeric, unique), chassis/motor number (optional), color, manufacturer/model (optional), operating area/thana, **rickshaw photo** (required; optional second photo of the rear), owner (required at registration), status (ACTIVE/SUSPENDED/IMPOUNDED). *(v1.2: no driver is attached to a rickshaw.)* Editing a rickshaw does not change its owner; that goes through FR-13.
+- **FR-6 Driver assignment**: **Removed in v1.2.** Drivers and rickshaws are independent records. Past assignment rows are kept in the database for reference only and are not shown or edited.
+- **FR-7 Search & list**: paginated. Rickshaws filter by number, thana, status, registration date range and current owner NID/mobile. Drivers filter by driver code, NID, mobile, status and date range.
+- **FR-8 Detail views**: rickshaw + current owner + photos + ownership history + complaints and cases against it; driver + complaints and cases against them.
+- **FR-9 Registration card**: printable PDF/HTML card with photo, number, thana and a QR code linking to the verify endpoint (no driver code from v1.2).
+- **FR-10 Audit log**: who did what and when (create/update/status change/login; from v1.2 also ownership transfers, complaints and cases), viewable by Admin.
+- **FR-11 Dashboard**: totals, registrations per day/thana, top officers; from v1.2 also open complaints and open cases.
 - **FR-12 Mobile field capture**: register with the camera and look up by number or QR scan. Offline drafts are queued and synced when online (phase 3b).
+- **FR-13 Ownership transfer** (v1.2): an OFFICER or ADMIN changes a rickshaw's owner to another registered owner (or a new owner created in the same flow), with an optional note. Each ownership period is kept with from/to dates and who made the change. Exactly one current owner per rickshaw. Transferring to the current owner is rejected (`SAME_OWNER`). Not subject to the 24h edit window.
+- **FR-14 Complaints** (v1.2): a **member of the public files a complaint** against a rickshaw or a driver through a public web form (no login). Officers and admins review and act on it.
+  - Required: **rickshaw number**, **driver code**, **complainant name**, **complainant phone** (`^01[3-9]\d{8}$`), **complainant NID** (10 or 17 digits), description (≤ 2000 chars).
+  - Optional: incident date/time, location/thana, category (OVERCHARGING, MISBEHAVIOUR, RECKLESS_DRIVING, ACCIDENT, THEFT, OTHER; default OTHER).
+  - The rickshaw number and driver code must belong to registered records (`RICKSHAW_NOT_FOUND` / `DRIVER_NOT_FOUND` otherwise).
+  - System: `complaintNo` (`CMP-YYYY-NNNNNN`), status (OPEN → RESOLVED / REJECTED / ESCALATED), resolution note, filedAt, handledBy (the officer who last changed the status).
+  - After submitting, the complainant sees the complaint number. They can check its status later with the complaint number + their phone; the lookup returns only number, status, filed date and the resolution note.
+  - Abuse protection: the public endpoints are rate limited per client IP (default 5 complaints per hour, 30 lookups per hour; 429 `RATE_LIMITED`), and the form has a honeypot field. No CAPTCHA in v1.2.
+  - Status changes need a note. ESCALATED is set only by filing a case from the complaint (FR-15).
+  - Complainant NID/phone are personal data: shown only to authenticated users, never returned by public endpoints. Public error messages don't reveal driver/rickshaw details beyond "not registered".
+- **FR-15 Cases** (v1.2, new feature): an OFFICER or ADMIN files a formal case against a rickshaw and/or a driver (at least one is required).
+  - Required: offence (≤ 200 chars), description (≤ 2000 chars), incident date/time, thana.
+  - Optional: rickshaw, driver, source complaint (the complaint becomes ESCALATED and links to the case), evidence photos (up to 3, same rules as other photos).
+  - System: `caseNo` (`CASE-YYYY-NNNNNN`), status (OPEN → UNDER_INVESTIGATION → CLOSED / DISMISSED), resolution note, filedBy/At, closedAt.
+  - Status changes need a note. Reopening a CLOSED/DISMISSED case is ADMIN-only. Filing a case does not change the rickshaw's or driver's status; that stays a separate admin action.
+- **FR-16 Complaint & case lists**: paginated, filterable by status, rickshaw number, driver code, thana, date range; complaints also by complainant phone/NID.
 
 ### 1.3 Non-functional requirements
 - Photos are compressed client-side to ≤ 1600 px / ~500 KB; the server rejects files over 2 MB or with a bad content type (magic-byte check).
@@ -72,7 +88,7 @@ React web and React Native mobile → REST/JSON + JWT → Spring Boot → Postgr
   - `driver(id, driver_code uq, full_name, father_name, dob, gender, nid uq, licence_no, mobile, present_addr jsonb/cols, permanent_addr, blood_group, emergency_name, emergency_phone, photo_id, nid_front_id, nid_back_id, status, registered_by, registered_at, updated_at)`
   - `owner(id, full_name, nid uq, mobile, address, created_by, created_at)`
   - `rickshaw(id, rickshaw_number uq, chassis_no, motor_no, color, model, thana, photo_id, rear_photo_id, owner_id, status, registered_by, registered_at, updated_at)`
-  - `assignment(id, rickshaw_id, driver_id, from_date, to_date null)` with partial unique indexes where `to_date is null`
+  - `assignment(id, rickshaw_id, driver_id, from_date, to_date null)` with partial unique indexes where `to_date is null` *(unused from v1.2; kept read-only for history)*
   - `photo(id uuid, path, content_type, size, uploaded_by, uploaded_at)`
   - `audit_log(id, actor_id, action, entity, entity_id, details jsonb, at)`
   - Sequences for `driver_code` and `rickshaw_number`
@@ -83,14 +99,20 @@ React web and React Native mobile → REST/JSON + JWT → Spring Boot → Postgr
   - `GET|POST /drivers`, `GET|PUT /drivers/{id}`, `PATCH /drivers/{id}/status`, `GET /drivers/check-nid?nid=`
   - `GET|POST /owners`, `GET|PUT /owners/{id}`
   - `GET|POST /rickshaws`, `GET|PUT /rickshaws/{id}`, `PATCH /rickshaws/{id}/status`, `GET /rickshaws/next-number`
-  - `POST /rickshaws/{id}/assignments` (reassign), `GET /rickshaws/{id}/assignments`
+  - ~~`POST /rickshaws/{id}/assignments` (reassign), `GET /rickshaws/{id}/assignments`~~ removed in v1.2
+  - v1.2: `POST /rickshaws/{id}/ownership` (transfer), `GET /rickshaws/{id}/ownership` (history)
+  - v1.2: `POST /public/complaints` (no auth), `GET /public/complaints/{complaintNo}?phone=` (no auth, status only)
+  - v1.2: `GET /complaints`, `GET /complaints/{id}`, `PATCH /complaints/{id}/status`
+  - v1.2: `GET|POST /cases`, `GET /cases/{id}`, `PATCH /cases/{id}/status`
+  - v1.2: `GET /rickshaws/{id}/complaints`, `GET /rickshaws/{id}/cases`, `GET /drivers/{id}/complaints`, `GET /drivers/{id}/cases`
   - `GET /rickshaws/{id}/card.pdf`, `GET /public/verify/{number}`
   - `GET /audit` (ADMIN), `GET /dashboard/summary`
 - **Errors**: a uniform `{code, message, fieldErrors[]}` body; 409 on duplicate NID/number.
 
 ### 2.2 Web (`web/`)
 - Vite + React 18 + TS, React Router, TanStack Query, Axios (JWT interceptor with refresh), React Hook Form + Zod, MUI, react-i18next (en/bn), Recharts (dashboard).
-- **Pages**: Login, Dashboard, Drivers (list/new/detail/edit), Owners, Rickshaws (list/new wizard: owner → driver → vehicle+photo → review, detail with card print), Users (admin), Audit (admin).
+- **Pages**: Login, Dashboard, Drivers (list/new/detail/edit), Owners, Rickshaws (list/new wizard: owner → vehicle+photo → review, detail with card print and "Change owner"), Complaints (list/detail), Cases (list/new/detail), Users (admin), Audit (admin). *(v1.2: the wizard's driver step and the detail page's reassign/assignment history are removed.)*
+- **Public pages (v1.2, no login)**: `/complain` (complaint form → shows the complaint number) and `/complain/status` (number + phone → status). Linked from the login page.
 - Photo input: file upload or webcam capture, with client-side resize before upload.
 - Route guards by role.
 
@@ -116,6 +138,8 @@ React web and React Native mobile → REST/JSON + JWT → Spring Boot → Postgr
 **Phase 2: Web**: scaffold → auth/guards → layout → drivers → owners → rickshaw wizard → search/detail/card → admin users/audit → dashboard → i18n
 
 **Phase 3: Mobile**: (3a) scaffold → login → register driver/rickshaw with camera → search/QR scan → detail; (3b) offline drafts + sync
+
+**Phase 4: v1.2 change request** (§7): backend (V2 migration → remove assignment API → ownership transfer → complaints → cases → tests) → backend `CLAUDE.md` → web (wizard/detail cleanup → change owner → complaints → cases → dashboard counts) → web `CLAUDE.md`. Integration tests cover: rickshaw create without driver, transfer + history + `SAME_OWNER`, complaint with unknown rickshaw/driver → 404 codes, complaint missing complainant fields → 400, public complaint filed without a token + status lookup with wrong phone → 404, rate limit → 429, case with neither rickshaw nor driver → 400, escalating a complaint into a case, status transition rules.
 
 ---
 
@@ -144,3 +168,33 @@ Differences from the plan above, and why:
 - **Photos in the web app** are fetched as blobs with the bearer token. On mobile, native `Image` sends the header directly.
 - **Shared validation:** `web/src/schemas.ts` is copied to `mobile/src/lib/schemas.ts` and mirrors `backend/.../common/Patterns.java`.
 - **Phase 3b (offline drafts and sync) is not built yet.** The mobile app needs a connection to register.
+
+---
+
+## 7. v1.2 change request (from `docs/feedback.md`, 2026-10-13)
+
+| # | Feedback | Change |
+|---|---|---|
+| 1 | Owner can be changed | New FR-13 ownership transfer with history |
+| 2 | Driver–rickshaw association isn't practical | FR-6 removed; FR-5/7/8/9 no longer mention a driver |
+| 3 | A case can be filed against a rickshaw and a driver | New FR-15 cases |
+| 4 | Complaints need rickshaw number, driver number, complainant name, phone, NID | New FR-14 complaints, FR-16 lists |
+
+### 7.1 Data model (Flyway `V2__ownership_complaints_cases.sql`; `V1` is not edited)
+- `ownership(id, rickshaw_id, owner_id, from_date, to_date null, changed_by, note)`. Backfilled with one open row per existing rickshaw from `rickshaw.owner_id`/`registered_at`/`registered_by`. `rickshaw.owner_id` stays as the current owner (denormalized for search and display); `RickshawService` keeps both in step. "One open row per rickshaw" is enforced in the service (no partial indexes, H2 portability).
+- `complaint(id, complaint_no uq, rickshaw_id, driver_id, complainant_name, complainant_phone, complainant_nid, category, description, incident_at null, thana null, status, resolution_note, handled_by null, filed_at, updated_at)`
+- `case_file(id, case_no uq, rickshaw_id null, driver_id null, complaint_id null, offence, description, incident_at, thana, status, resolution_note, filed_by, filed_at, updated_at, closed_at null)` (`case` is an SQL keyword, hence `case_file`). A complaint's case is found through `case_file.complaint_id`, plus `case_evidence(case_id, photo_id)`.
+- Sequences `complaint_no_seq`, `case_no_seq`.
+- `assignment` is left in place, untouched and no longer mapped by the API.
+
+### 7.2 API changes
+- `RickshawRequest.driverId` removed; `ownerId` is used on create only. `RickshawResponse.currentDriver` removed.
+- `DriverResponse.currentRickshaw` removed.
+- Rickshaw search `q` matches the number (contains) or the current owner's NID/mobile (exact).
+- New endpoints as listed in §2.1. New error codes: `SAME_OWNER`, `RICKSHAW_NOT_FOUND`, `DRIVER_NOT_FOUND`, `CASE_TARGET_REQUIRED`, `COMPLAINT_NOT_OPEN`, `INVALID_STATUS_TRANSITION`.
+- `GET /public/verify/{number}` is unchanged and never exposes complaints or cases.
+
+### 7.3 Scope of this change
+- Order: PRD → approval → backend → backend `CLAUDE.md` → web → web `CLAUDE.md`.
+- **Mobile is not in this round.** Its "Register Rickshaw" flow still sends `driverId` and shows the current driver, so it needs a follow-up update to keep working against the v1.2 backend.
+- Complaints are filed by the public through the unauthenticated complaint form (FR-14). The rest of the citizen portal stays out of scope.

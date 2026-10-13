@@ -23,6 +23,8 @@ import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
 import ElectricRickshawOutlined from '@mui/icons-material/ElectricRickshawOutlined'
 import BadgeOutlined from '@mui/icons-material/BadgeOutlined'
 import HomeWorkOutlined from '@mui/icons-material/HomeWorkOutlined'
+import FeedbackOutlined from '@mui/icons-material/FeedbackOutlined'
+import GavelOutlined from '@mui/icons-material/GavelOutlined'
 import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined'
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined'
 import AccountCircleOutlined from '@mui/icons-material/AccountCircleOutlined'
@@ -52,6 +54,8 @@ export function Layout() {
     { to: '/rickshaws', label: t('nav.rickshaws'), icon: <ElectricRickshawOutlined /> },
     { to: '/drivers', label: t('nav.drivers'), icon: <BadgeOutlined /> },
     { to: '/owners', label: t('nav.owners'), icon: <HomeWorkOutlined /> },
+    { to: '/complaints', label: t('nav.complaints'), icon: <FeedbackOutlined /> },
+    { to: '/cases', label: t('nav.cases'), icon: <GavelOutlined /> },
     ...(user?.role === 'ADMIN'
       ? [
           { to: '/users', label: t('nav.users'), icon: <ManageAccountsOutlined /> },

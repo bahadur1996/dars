@@ -1,5 +1,6 @@
-import { Alert, Box, Button, Stack, Typography } from '@mui/material'
+import { Alert, Box, Button, Stack } from '@mui/material'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Link as RouterLink, useParams } from 'react-router-dom'
 import { apiError } from '../api/client'
 import { driverApi } from '../api/endpoints'
@@ -7,7 +8,7 @@ import type { Address, DriverStatus } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { AuthImage } from '../components/AuthImage'
 import { Field, formatDate, formatDateTime, Mono, PageHeader, Section, StatusChip } from '../components/common'
-import { Plate } from '../components/Plate'
+import { CaseRows, ComplaintRows } from '../components/Records'
 import { StatusMenu } from '../components/StatusMenu'
 import { canEdit } from '../lib/permissions'
 
@@ -15,9 +16,12 @@ const addr = (a: Address) => `${a.line}, ${a.thana}, ${a.district}, ${a.division
 
 export function DriverDetailPage() {
   const id = Number(useParams().id)
+  const { t } = useTranslation()
   const { user } = useAuth()
   const qc = useQueryClient()
   const { data: d, error } = useQuery({ queryKey: ['driver', id], queryFn: () => driverApi.get(id) })
+  const complaints = useQuery({ queryKey: ['driver', id, 'complaints'], queryFn: () => driverApi.complaints(id) })
+  const cases = useQuery({ queryKey: ['driver', id, 'cases'], queryFn: () => driverApi.cases(id) })
 
   if (error) return <Alert severity="error">{apiError(error).message}</Alert>
   if (!d) return null
@@ -42,21 +46,13 @@ export function DriverDetailPage() {
             {canEdit(user, d.registeredBy.id, d.registeredAt) && (
               <Button variant="outlined" component={RouterLink} to={`/drivers/${id}/edit`}>Edit driver</Button>
             )}
+            <Button variant="outlined" component={RouterLink} to={`/cases/new?driverId=${id}`}>{t('action.fileCase')}</Button>
           </>
         }
       />
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '280px 1fr' } }}>
         <Stack spacing={2}>
           <AuthImage id={d.photoId} alt={`Photo of ${d.fullName}`} size="100%" ratio={3 / 4} />
-          <Section title="Drives">
-            {d.currentRickshaw ? (
-              <Button component={RouterLink} to={`/rickshaws/${d.currentRickshaw.id}`} sx={{ p: 0 }}>
-                <Plate number={d.currentRickshaw.rickshawNumber} />
-              </Button>
-            ) : (
-              <Typography color="text.secondary" variant="body2">Not assigned to a rickshaw.</Typography>
-            )}
-          </Section>
         </Stack>
         <Stack spacing={2}>
           <Section title="Identification" action={<StatusChip status={d.status} />}>
@@ -83,6 +79,12 @@ export function DriverDetailPage() {
               <AuthImage id={d.nidFrontId} alt="NID front" size={220} ratio={1.6} />
               <AuthImage id={d.nidBackId} alt="NID back" size={220} ratio={1.6} />
             </Stack>
+          </Section>
+          <Section title="Complaints">
+            <ComplaintRows rows={complaints.data} />
+          </Section>
+          <Section title="Cases">
+            <CaseRows rows={cases.data} />
           </Section>
         </Stack>
       </Box>

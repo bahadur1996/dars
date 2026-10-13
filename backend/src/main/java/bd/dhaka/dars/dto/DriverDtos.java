@@ -57,28 +57,25 @@ public final class DriverDtos {
     public record StatusRequest(@NotNull DriverStatus status, @Size(max = 500) String reason) {
     }
 
-    public record RickshawRef(Long id, String rickshawNumber) {
-    }
-
     public record DriverResponse(
             Long id, String driverCode, String fullName, String fatherName, LocalDate dateOfBirth, Gender gender,
             String nid, String licenceNo, String mobile, Address presentAddress, Address permanentAddress,
             String bloodGroup, String emergencyName, String emergencyPhone,
             UUID photoId, UUID nidFrontId, UUID nidBackId,
-            DriverStatus status, RickshawRef currentRickshaw, UserRef registeredBy, Instant registeredAt,
+            DriverStatus status, UserRef registeredBy, Instant registeredAt,
             Instant updatedAt) {
 
-        public static DriverResponse from(Driver d, RickshawRef currentRickshaw) {
+        public static DriverResponse from(Driver d) {
             return new DriverResponse(d.getId(), d.getDriverCode(), d.getFullName(), d.getFatherName(),
                     d.getDateOfBirth(), d.getGender(), d.getNid(), d.getLicenceNo(), d.getMobile(),
                     d.getPresentAddress(), d.getPermanentAddress(), d.getBloodGroup(), d.getEmergencyName(),
                     d.getEmergencyPhone(), idOf(d.getPhoto()), idOf(d.getNidFront()), idOf(d.getNidBack()),
-                    d.getStatus(), currentRickshaw, UserRef.from(d.getRegisteredBy()), d.getRegisteredAt(),
+                    d.getStatus(), UserRef.from(d.getRegisteredBy()), d.getRegisteredAt(),
                     d.getUpdatedAt());
         }
     }
 
-    /** Compact driver view embedded in rickshaw responses and lists. */
+    /** Compact driver view embedded in complaint and case responses. */
     public record DriverSummary(Long id, String driverCode, String fullName, String nid, String mobile,
                                 UUID photoId, DriverStatus status) {
 

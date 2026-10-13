@@ -10,11 +10,16 @@ public record DarsProperties(
         String storageDir,
         List<String> corsOrigins,
         String publicBaseUrl,
-        Admin admin) {
+        Admin admin,
+        PublicLimits publicLimits) {
 
     public record Jwt(String secret, Duration accessTtl, Duration refreshTtl) {
     }
 
     public record Admin(String username, String password, String fullName) {
+    }
+
+    /** Per-client-IP hourly limits for the unauthenticated complaint endpoints. */
+    public record PublicLimits(int complaintsPerHour, int lookupsPerHour) {
     }
 }

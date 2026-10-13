@@ -34,11 +34,11 @@ export function RickshawsPage() {
     <>
       <PageHeader
         title={t('nav.rickshaws')}
-        subtitle="Find a rickshaw by its number, or by its driver's code, NID or mobile."
+        subtitle="Find a rickshaw by its number, or by its owner's NID or mobile."
         actions={<Button variant="contained" onClick={() => navigate('/rickshaws/new')}>{t('action.registerRickshaw')}</Button>}
       />
       <Box component="form" onSubmit={(e) => { e.preventDefault(); update({ q: q.trim() }) }} sx={{ display: 'grid', gap: 1.5, mb: 2, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '2fr 1fr 1fr 1fr 1fr auto' } }}>
-        <TextField label="Search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="DHK-AR-000123, DRV-…, NID or mobile" />
+        <TextField label="Search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="DHK-AR-000123, owner NID or mobile" />
         <Autocomplete freeSolo options={DHAKA_THANAS} value={get('thana') || null} onChange={(_, v) => update({ thana: v ?? '' })} renderInput={(p) => <TextField {...p} label="Thana" />} />
         <TextField select label="Status" value={get('status')} onChange={(e) => update({ status: e.target.value })}>
           <MenuItem value="">Any status</MenuItem>
@@ -62,28 +62,22 @@ export function RickshawsPage() {
                 <TableRow>
                   <TableCell>Number</TableCell>
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Photo</TableCell>
-                  <TableCell>Driver</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Owner</TableCell>
+                  <TableCell>Owner</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Thana</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Registered</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {isLoading && <TableRow><TableCell colSpan={7}>Loading rickshaws…</TableCell></TableRow>}
+                {isLoading && <TableRow><TableCell colSpan={6}>Loading rickshaws…</TableCell></TableRow>}
                 {data?.content.map((r) => (
                   <TableRow key={r.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/rickshaws/${r.id}`)}>
                     <TableCell><Plate number={r.rickshawNumber} size="sm" /></TableCell>
                     <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}><AuthImage id={r.photoId} alt="" size={56} ratio={4 / 3} /></TableCell>
                     <TableCell>
-                      {r.currentDriver ? (
-                        <>
-                          <Typography variant="body2">{r.currentDriver.fullName}</Typography>
-                          <Typography variant="caption" color="text.secondary"><Mono>{r.currentDriver.driverCode}</Mono></Typography>
-                        </>
-                      ) : <Typography variant="caption" color="text.secondary">No driver</Typography>}
+                      <Typography variant="body2">{r.owner.fullName}</Typography>
+                      <Typography variant="caption" color="text.secondary"><Mono>{r.owner.mobile}</Mono></Typography>
                     </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{r.owner.fullName}</TableCell>
                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{r.thana}</TableCell>
                     <TableCell><StatusChip status={r.status} /></TableCell>
                     <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>

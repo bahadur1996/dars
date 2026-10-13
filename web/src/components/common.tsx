@@ -7,15 +7,24 @@ const STATUS_COLOR: Record<string, ChipProps['color']> = {
   SUSPENDED: 'warning',
   IMPOUNDED: 'error',
   BLACKLISTED: 'error',
+  // Complaints and cases
+  OPEN: 'warning',
+  UNDER_INVESTIGATION: 'warning',
+  ESCALATED: 'error',
+  RESOLVED: 'primary',
+  CLOSED: 'primary',
 }
+
+/** Sentence-cases an enum value: UNDER_INVESTIGATION becomes "Under investigation". */
+export const enumLabel = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replaceAll('_', ' ')
 
 export function StatusChip({ status }: { status: string }) {
   return (
     <Chip
       size="small"
-      label={status.charAt(0) + status.slice(1).toLowerCase()}
+      label={enumLabel(status)}
       color={STATUS_COLOR[status] ?? 'default'}
-      variant={status === 'ACTIVE' ? 'outlined' : 'filled'}
+      variant={status === 'ACTIVE' || status === 'RESOLVED' || status === 'CLOSED' ? 'outlined' : 'filled'}
     />
   )
 }
@@ -33,7 +42,11 @@ export function PageHeader({ title, subtitle, actions }: { title: ReactNode; sub
           </Typography>
         )}
       </Box>
-      {actions && <Stack direction="row" spacing={1}>{actions}</Stack>}
+      {actions && (
+        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', '& .MuiButton-root': { whiteSpace: 'nowrap' } }}>
+          {actions}
+        </Stack>
+      )}
     </Stack>
   )
 }

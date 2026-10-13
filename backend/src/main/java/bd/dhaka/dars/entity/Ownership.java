@@ -14,13 +14,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** A driver driving a rickshaw for a period; {@code toDate == null} means currently active. */
+/** An owner holding a rickshaw for a period; {@code toDate == null} means the current owner (FR-13). */
 @Entity
-@Table(name = "assignment")
+@Table(name = "ownership")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Assignment {
+public class Ownership {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,20 +31,23 @@ public class Assignment {
     private Rickshaw rickshaw;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "driver_id")
-    private Driver driver;
+    @JoinColumn(name = "owner_id")
+    private Owner owner;
 
     private Instant fromDate;
     private Instant toDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_by")
-    private AppUser assignedBy;
+    @JoinColumn(name = "changed_by")
+    private AppUser changedBy;
 
-    public Assignment(Rickshaw rickshaw, Driver driver, AppUser assignedBy) {
+    private String note;
+
+    public Ownership(Rickshaw rickshaw, Owner owner, AppUser changedBy, String note) {
         this.rickshaw = rickshaw;
-        this.driver = driver;
-        this.assignedBy = assignedBy;
+        this.owner = owner;
+        this.changedBy = changedBy;
+        this.note = note;
         this.fromDate = Instant.now();
     }
 }

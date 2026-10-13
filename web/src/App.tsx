@@ -4,12 +4,18 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import { Layout } from './components/Layout'
 import { AuditPage } from './pages/AuditPage'
+import { CaseDetailPage } from './pages/CaseDetailPage'
+import { CaseFormPage } from './pages/CaseFormPage'
+import { CasesPage } from './pages/CasesPage'
+import { ComplaintDetailPage } from './pages/ComplaintDetailPage'
+import { ComplaintsPage } from './pages/ComplaintsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { DriverDetailPage } from './pages/DriverDetailPage'
 import { DriverFormPage } from './pages/DriverFormPage'
 import { DriversPage } from './pages/DriversPage'
 import { LoginPage } from './pages/LoginPage'
 import { OwnersPage } from './pages/OwnersPage'
+import { PublicComplaintPage, PublicComplaintStatusPage } from './pages/PublicComplaintPages'
 import { RickshawDetailPage } from './pages/RickshawDetailPage'
 import { RickshawsPage } from './pages/RickshawsPage'
 import { RickshawWizardPage } from './pages/RickshawWizardPage'
@@ -38,6 +44,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      {/* Public: no login (FR-14). */}
+      <Route path="/complain" element={<PublicComplaintPage />} />
+      <Route path="/complain/status" element={<PublicComplaintStatusPage />} />
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
         <Route index element={<DashboardPage />} />
         <Route path="rickshaws" element={<RickshawsPage />} />
@@ -49,6 +58,11 @@ export default function App() {
         <Route path="drivers/:id" element={<DriverDetailPage />} />
         <Route path="drivers/:id/edit" element={<DriverFormPage />} />
         <Route path="owners" element={<OwnersPage />} />
+        <Route path="complaints" element={<ComplaintsPage />} />
+        <Route path="complaints/:id" element={<ComplaintDetailPage />} />
+        <Route path="cases" element={<CasesPage />} />
+        <Route path="cases/new" element={<CaseFormPage />} />
+        <Route path="cases/:id" element={<CaseDetailPage />} />
         <Route path="users" element={<RequireAdmin><UsersPage /></RequireAdmin>} />
         <Route path="audit" element={<RequireAdmin><AuditPage /></RequireAdmin>} />
         <Route path="*" element={<Navigate to="/" replace />} />

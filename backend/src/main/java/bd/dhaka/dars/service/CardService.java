@@ -1,7 +1,6 @@
 package bd.dhaka.dars.service;
 
 import bd.dhaka.dars.config.DarsProperties;
-import bd.dhaka.dars.entity.Driver;
 import bd.dhaka.dars.entity.Photo;
 import bd.dhaka.dars.entity.Rickshaw;
 import com.google.zxing.BarcodeFormat;
@@ -48,7 +47,7 @@ public class CardService {
         return props.publicBaseUrl() + "/api/v1/public/verify/" + r.getRickshawNumber();
     }
 
-    public byte[] render(Rickshaw r, Driver driver) {
+    public byte[] render(Rickshaw r) {
         // Card size: A6 landscape.
         Document doc = new Document(new Rectangle(420, 298), 18, 18, 18, 18);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -74,8 +73,6 @@ public class CardService {
         table.addCell(imageCell(r.getPhoto()));
 
         PdfPTable info = new PdfPTable(1);
-        addField(info, "Driver", driver == null ? "-" : driver.getFullName() + " (" + driver.getDriverCode() + ")",
-                label, value);
         addField(info, "Owner", r.getOwner().getFullName(), label, value);
         addField(info, "Thana", r.getThana(), label, value);
         addField(info, "Status", r.getStatus().name(), label, value);
@@ -84,12 +81,7 @@ public class CardService {
         infoCell.setBorder(Rectangle.NO_BORDER);
         table.addCell(infoCell);
 
-        PdfPTable right = new PdfPTable(1);
-        right.addCell(imageCell(driver == null ? null : driver.getPhoto()));
-        right.addCell(qrCell(verifyUrl(r)));
-        PdfPCell rightCell = new PdfPCell(right);
-        rightCell.setBorder(Rectangle.NO_BORDER);
-        table.addCell(rightCell);
+        table.addCell(qrCell(verifyUrl(r)));
 
         doc.add(table);
         doc.close();

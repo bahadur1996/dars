@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { driverSchema, isAdult, ownerSchema, rickshawSchema } from './schemas'
+import { caseSchema, driverSchema, isAdult, localToIso, ownerSchema, publicComplaintSchema, rickshawSchema } from './schemas'
 
 const address = { division: 'Dhaka', district: 'Dhaka', thana: 'Mirpur', line: 'House 1' }
 const validDriver = {
@@ -61,7 +61,7 @@ describe('isAdult', () => {
 })
 
 describe('rickshawSchema', () => {
-  const valid = { rickshawNumber: '', thana: 'Mirpur', photoId: 'p', rearPhotoId: null, ownerId: 1, driverId: 2,
+  const valid = { rickshawNumber: '', thana: 'Mirpur', photoId: 'p', rearPhotoId: null, ownerId: 1,
     chassisNo: '', motorNo: '', color: '', model: '' }
 
   it('treats a blank number as "issue one for me"', () => {
@@ -81,5 +81,55 @@ describe('ownerSchema', () => {
   it('validates NID and mobile', () => {
     const r = ownerSchema.safeParse({ fullName: 'X', nid: '1', mobile: '1', address })
     expect(fieldsOf(r)).toEqual(expect.arrayContaining(['nid', 'mobile']))
+  })
+})
+
+describe('localToIso', () => {
+  it('reads a datetime-local value as Dhaka time', () => {
+    expect(localToIso('2026-10-13T09:30')).toBe('2026-10-13T03:30:00.000Z')
+  })
+  it('turns blank into null', () => expect(localToIso('')).toBeNull())
+})
+
+describe('publicComplaintSchema', () => {
+  const valid = {
+    rickshawNumber: ' dhk-ar-000001 ', driverCode: 'drv-2026-000001', complainantName: 'Rina Akter',
+    complainantPhone: '01912345678', complainantNid: '1234567890', category: 'OVERCHARGING' as const,
+    description: 'Charged double', incidentAt: '', thana: '', website: '',
+  }
+
+  it('uppercases the numbers and nulls blank optionals', () => {
+    const out = publicComplaintSchema.parse(valid)
+    expect(out.rickshawNumber).toBe('DHK-AR-000001')
+    expect(out.driverCode).toBe('DRV-2026-000001')
+    expect(out.incidentAt).toBeNull()
+    expect(out.thana).toBeNull()
+  })
+
+  it('requires the rickshaw, driver and complainant details', () => {
+    const r = publicComplaintSchema.safeParse({ ...valid, rickshawNumber: ' ', driverCode: '', complainantName: '', complainantPhone: '123', complainantNid: '1' })
+    expect(fieldsOf(r)).toEqual(expect.arrayContaining(['rickshawNumber', 'driverCode', 'complainantName', 'complainantPhone', 'complainantNid']))
+  })
+
+  it('rejects an incident in the future', () => {
+    expect(fieldsOf(publicComplaintSchema.safeParse({ ...valid, incidentAt: '2999-01-01T10:00' }))).toContain('incidentAt')
+  })
+})
+
+describe('caseSchema', () => {
+  const valid = {
+    rickshawId: 1, driverId: null, complaintId: null, offence: 'Overcharging', description: 'Details',
+    incidentAt: '2026-01-10T08:00', thana: 'Mirpur', evidencePhotoIds: [],
+  }
+
+  it('accepts a rickshaw-only case', () => expect(caseSchema.safeParse(valid).success).toBe(true))
+
+  it('needs a rickshaw, a driver or a complaint', () => {
+    expect(fieldsOf(caseSchema.safeParse({ ...valid, rickshawId: null }))).toContain('rickshawId')
+    expect(caseSchema.safeParse({ ...valid, rickshawId: null, complaintId: 7 }).success).toBe(true)
+  })
+
+  it('allows at most 3 evidence photos', () => {
+    expect(fieldsOf(caseSchema.safeParse({ ...valid, evidencePhotoIds: ['a', 'b', 'c', 'd'] }))).toContain('evidencePhotoIds')
   })
 })

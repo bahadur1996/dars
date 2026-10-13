@@ -86,6 +86,11 @@ public class DriverService {
         return drivers.findByNid(nid);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Driver> findByCode(String driverCode) {
+        return drivers.findByDriverCode(driverCode.trim().toUpperCase());
+    }
+
     /** Free-text search matches driver code, NID, mobile (exact) or name (contains). */
     @Transactional(readOnly = true)
     public Page<Driver> search(String q, DriverStatus status, Pageable pageable) {
